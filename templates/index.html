@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Quantum Playground</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="logo">
+            <div class="logo-icon">⚛</div>
+            <div>
+                <h2>Quantum</h2>
+                <span>Playground</span>
+            </div>
+        </div>
+
+        <nav>
+
+            <a href="/" class="nav-item active">
+                <span>⌂</span>
+                Home
+            </a>
+
+            <a href="/explore" class="nav-item">
+                <span>◉</span>
+                Explore
+            </a>
+
+            <a href="/circuit" class="nav-item">
+                <span>⚡</span>
+                Circuit Lab
+            </a>
+
+            <a href="/measurement" class="nav-item">
+                <span>▥</span>
+                Measurement Lab
+            </a>
+
+            <a href="/entanglement" class="nav-item">
+                <span>∞</span>
+                Entanglement Lab
+            </a>
+
+            <div class="nav-divider"></div>
+
+            <a href="/learn" class="nav-item">
+                <span>📖</span>
+                Learn
+            </a>
+
+            <a href="/about" class="nav-item">
+                <span>ⓘ</span>
+                About
+            </a>
+
+            <a href="/help" class="nav-item">
+                <span>?</span>
+                Help
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+            <span class="status-dot"></span>
+            Quantum Engine Ready
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <section class="hero">
+
+            <div class="hero-text">
+
+                <div class="eyebrow">
+                    ⚛ INTERACTIVE QUANTUM SIMULATOR
+                </div>
+
+                <h1>
+                    Welcome to
+                    <span>Quantum Playground</span>
+                </h1>
+
+                <p>
+                    Explore the fascinating world of quantum computing
+                    through interactive experiments, visualizations,
+                    quantum gates and measurements.
+                </p>
+
+                <div class="hero-buttons">
+
+                    <a href="/explore" class="primary-btn">
+                        Start Exploring →
+                    </a>
+
+                    <a href="/learn" class="secondary-btn">
+                        Learn the Basics
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div class="hero-orbit">
+
+                <div class="orbit orbit-1"></div>
+                <div class="orbit orbit-2"></div>
+
+                <div class="atom">
+                    <span>⚛</span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section class="section-header">
+
+            <div>
+                <p class="section-label">EXPERIMENT</p>
+                <h2>Quantum Laboratories</h2>
+            </div>
+
+            <p>
+                Choose an experiment and start exploring.
+            </p>
+
+        </section>
+
+
+        <section class="feature-grid">
+
+            <a href="/explore" class="feature-card purple">
+
+                <div class="card-icon">◉</div>
+
+                <div>
+                    <h3>Single Qubit</h3>
+
+                    <p>
+                        Explore quantum states and visualize
+                        them on the Bloch sphere.
+                    </p>
+                </div>
+
+                <span class="card-arrow">→</span>
+
+            </a>
+
+
+            <a href="/circuit" class="feature-card blue">
+
+                <div class="card-icon">⚡</div>
+
+                <div>
+                    <h3>Circuit Lab</h3>
+
+                    <p>
+                        Build quantum circuits using
+                        X, Y, Z, H and other gates.
+                    </p>
+                </div>
+
+                <span class="card-arrow">→</span>
+
+            </a>
+
+
+            <a href="/measurement" class="feature-card green">
+
+                <div class="card-icon">▥</div>
+
+                <div>
+                    <h3>Measurement Lab</h3>
+
+                    <p>
+                        Simulate measurements and observe
+                        quantum probabilities.
+                    </p>
+                </div>
+
+                <span class="card-arrow">→</span>
+
+            </a>
+
+
+            <a href="/entanglement" class="feature-card orange">
+
+                <div class="card-icon">∞</div>
+
+                <div>
+                    <h3>Entanglement Lab</h3>
+
+                    <p>
+                        Create two-qubit systems and
+                        explore quantum entanglement.
+                    </p>
+                </div>
+
+                <span class="card-arrow">→</span>
+
+            </a>
+
+        </section>
+
+
+        <section class="info-strip">
+
+            <div>
+                <strong>1</strong>
+                <span>Qubit Explorer</span>
+            </div>
+
+            <div>
+                <strong>6+</strong>
+                <span>Quantum Gates</span>
+            </div>
+
+            <div>
+                <strong>∞</strong>
+                <span>Experiments</span>
+            </div>
+
+            <div>
+                <strong>100%</strong>
+                <span>Simulation</span>
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

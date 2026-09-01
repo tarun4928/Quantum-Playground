@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Help | Quantum Playground</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            <div class="logo-icon">⚛</div>
+            <div>
+                <h2>Quantum</h2>
+                <span>Playground</span>
+            </div>
+        </div>
+
+        <nav>
+
+            <a href="/" class="nav-item">
+                <span>⌂</span> Home
+            </a>
+
+            <a href="/explore" class="nav-item">
+                <span>◉</span> Explore
+            </a>
+
+            <a href="/circuit" class="nav-item">
+                <span>⚡</span> Circuit Lab
+            </a>
+
+            <a href="/measurement" class="nav-item">
+                <span>▥</span> Measurement Lab
+            </a>
+
+            <a href="/entanglement" class="nav-item">
+                <span>∞</span> Entanglement Lab
+            </a>
+
+            <div class="nav-divider"></div>
+
+            <a href="/learn" class="nav-item">
+                <span>📖</span> Learn
+            </a>
+
+            <a href="/about" class="nav-item">
+                <span>ⓘ</span> About
+            </a>
+
+            <a href="/help" class="nav-item active">
+                <span>?</span> Help
+            </a>
+
+        </nav>
+
+    </aside>
+
+
+    <main class="main-content">
+
+        <div class="page-heading">
+
+            <p class="section-label">USER GUIDE</p>
+
+            <h1>How to Use Quantum Playground</h1>
+
+            <p>
+                A quick guide to the different laboratories.
+            </p>
+
+        </div>
+
+
+        <section class="help-list">
+
+            <div class="help-item">
+
+                <span>01</span>
+
+                <div>
+                    <h2>Explore</h2>
+                    <p>
+                        Start with a single qubit and apply
+                        different quantum gates.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="help-item">
+
+                <span>02</span>
+
+                <div>
+                    <h2>Circuit Lab</h2>
+                    <p>
+                        Select quantum gates and build a sequence
+                        of operations.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="help-item">
+
+                <span>03</span>
+
+                <div>
+                    <h2>Measurement Lab</h2>
+                    <p>
+                        Select the number of measurement shots
+                        and observe the resulting distribution.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="help-item">
+
+                <span>04</span>
+
+                <div>
+                    <h2>Entanglement Lab</h2>
+                    <p>
+                        Create a Bell state and investigate
+                        correlations between two qubits.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>

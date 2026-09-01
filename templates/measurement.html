@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Measurement Lab | Quantum Playground</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            <div class="logo-icon">⚛</div>
+            <div>
+                <h2>Quantum</h2>
+                <span>Playground</span>
+            </div>
+        </div>
+
+        <nav>
+
+            <a href="/" class="nav-item">
+                <span>⌂</span> Home
+            </a>
+
+            <a href="/explore" class="nav-item">
+                <span>◉</span> Explore
+            </a>
+
+            <a href="/circuit" class="nav-item">
+                <span>⚡</span> Circuit Lab
+            </a>
+
+            <a href="/measurement" class="nav-item active">
+                <span>▥</span> Measurement Lab
+            </a>
+
+            <a href="/entanglement" class="nav-item">
+                <span>∞</span> Entanglement Lab
+            </a>
+
+            <div class="nav-divider"></div>
+
+            <a href="/learn" class="nav-item">
+                <span>📖</span> Learn
+            </a>
+
+            <a href="/about" class="nav-item">
+                <span>ⓘ</span> About
+            </a>
+
+            <a href="/help" class="nav-item">
+                <span>?</span> Help
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+            <span class="status-dot"></span>
+            Quantum Engine Ready
+        </div>
+
+    </aside>
+
+
+    <main class="main-content">
+
+        <div class="page-heading">
+            <p class="section-label">LAB 03</p>
+            <h1>Measurement Lab</h1>
+            <p>
+                Observe the probabilistic nature of quantum measurement.
+            </p>
+        </div>
+
+
+        <div class="workspace-grid">
+
+            <section class="panel">
+
+                <div class="panel-title">
+                    <div>
+                        <span class="panel-number">01</span>
+                        <h2>Measurement Setup</h2>
+                    </div>
+                </div>
+
+
+                <div class="measurement-state">
+
+                    <span>Current State</span>
+
+                    <strong>|+⟩</strong>
+
+                </div>
+
+
+                <label class="input-label">
+                    Number of Shots
+                </label>
+
+                <input
+                    type="number"
+                    id="shots"
+                    value="1000"
+                    min="1"
+                    max="10000"
+                    class="number-input"
+                >
+
+
+                <button class="primary-btn full-btn"
+                        onclick="runMeasurement()">
+
+                    Measure
+
+                </button>
+
+            </section>
+
+
+            <section class="panel">
+
+                <div class="panel-title">
+                    <div>
+                        <span class="panel-number">02</span>
+                        <h2>Results</h2>
+                    </div>
+                </div>
+
+
+                <div class="measurement-results">
+
+                    <div class="result-card">
+
+                        <span>|0⟩</span>
+
+                        <strong id="measurement0">
+                            —
+                        </strong>
+
+                    </div>
+
+
+                    <div class="result-card">
+
+                        <span>|1⟩</span>
+
+                        <strong id="measurement1">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <section class="panel">
+
+            <div class="panel-title">
+
+                <div>
+                    <span class="panel-number">03</span>
+                    <h2>Measurement Histogram</h2>
+                </div>
+
+            </div>
+
+
+            <div class="histogram">
+
+                <div class="histogram-column">
+
+                    <div class="histogram-bar"
+                         id="hist0"
+                         style="height:10%">
+
+                        <span id="histValue0">0</span>
+
+                    </div>
+
+                    <label>|0⟩</label>
+
+                </div>
+
+
+                <div class="histogram-column">
+
+                    <div class="histogram-bar"
+                         id="hist1"
+                         style="height:10%">
+
+                        <span id="histValue1">0</span>
+
+                    </div>
+
+                    <label>|1⟩</label>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

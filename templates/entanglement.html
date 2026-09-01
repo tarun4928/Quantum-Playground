@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Entanglement Lab | Quantum Playground</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            <div class="logo-icon">⚛</div>
+            <div>
+                <h2>Quantum</h2>
+                <span>Playground</span>
+            </div>
+        </div>
+
+        <nav>
+
+            <a href="/" class="nav-item">
+                <span>⌂</span> Home
+            </a>
+
+            <a href="/explore" class="nav-item">
+                <span>◉</span> Explore
+            </a>
+
+            <a href="/circuit" class="nav-item">
+                <span>⚡</span> Circuit Lab
+            </a>
+
+            <a href="/measurement" class="nav-item">
+                <span>▥</span> Measurement Lab
+            </a>
+
+            <a href="/entanglement" class="nav-item active">
+                <span>∞</span> Entanglement Lab
+            </a>
+
+            <div class="nav-divider"></div>
+
+            <a href="/learn" class="nav-item">
+                <span>📖</span> Learn
+            </a>
+
+            <a href="/about" class="nav-item">
+                <span>ⓘ</span> About
+            </a>
+
+            <a href="/help" class="nav-item">
+                <span>?</span> Help
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+            <span class="status-dot"></span>
+            Quantum Engine Ready
+        </div>
+
+    </aside>
+
+
+    <main class="main-content">
+
+        <div class="page-heading">
+            <p class="section-label">LAB 04</p>
+            <h1>Entanglement Lab</h1>
+            <p>
+                Explore two-qubit systems and discover
+                the strange correlations of quantum entanglement.
+            </p>
+        </div>
+
+
+        <section class="panel">
+
+            <div class="panel-title">
+
+                <div>
+                    <span class="panel-number">01</span>
+                    <h2>Bell State Circuit</h2>
+                </div>
+
+            </div>
+
+
+            <div class="entanglement-circuit">
+
+                <div class="entangle-wire">
+
+                    <span>q₀</span>
+
+                    <div class="gate-box">
+                        H
+                    </div>
+
+                    <div class="control-dot">
+                        ●
+                    </div>
+
+                    <div class="connection-line"></div>
+
+                </div>
+
+
+                <div class="entangle-wire">
+
+                    <span>q₁</span>
+
+                    <div class="empty-gate"></div>
+
+                    <div class="target-box">
+                        X
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <button class="primary-btn"
+                    onclick="createBellState()">
+
+                Create Bell State
+
+            </button>
+
+        </section>
+
+
+        <div class="workspace-grid">
+
+            <section class="panel">
+
+                <div class="panel-title">
+                    <h2>State Amplitudes</h2>
+                </div>
+
+
+                <div class="amplitude-list">
+
+                    <div>
+                        <span>|00⟩</span>
+                        <strong id="amp00">
+                            0.707
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>|01⟩</span>
+                        <strong>0</strong>
+                    </div>
+
+                    <div>
+                        <span>|10⟩</span>
+                        <strong>0</strong>
+                    </div>
+
+                    <div>
+                        <span>|11⟩</span>
+                        <strong id="amp11">
+                            0.707
+                        </strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel">
+
+                <div class="panel-title">
+                    <h2>Entanglement Status</h2>
+                </div>
+
+
+                <div class="entanglement-status"
+                     id="entanglementStatus">
+
+                    <span>?</span>
+
+                    <strong>
+                        Not measured
+                    </strong>
+
+                    <p>
+                        Create a Bell state to begin.
+                    </p>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </main>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

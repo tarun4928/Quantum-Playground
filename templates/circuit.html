@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Circuit Lab | Quantum Playground
+    </title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+<div class="app-container">
+
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <div class="logo-icon">
+                ⚛
+            </div>
+
+            <div>
+                <h2>Quantum</h2>
+
+                <span>
+                    Playground
+                </span>
+            </div>
+
+        </div>
+
+
+        <nav>
+
+            <a href="/" class="nav-item">
+                <span>⌂</span>
+                Home
+            </a>
+
+            <a href="/explore" class="nav-item">
+                <span>◉</span>
+                Explore
+            </a>
+
+            <a href="/circuit"
+               class="nav-item active">
+
+                <span>⚡</span>
+                Circuit Lab
+
+            </a>
+
+            <a href="/measurement"
+               class="nav-item">
+
+                <span>▥</span>
+                Measurement Lab
+
+            </a>
+
+            <a href="/entanglement"
+               class="nav-item">
+
+                <span>∞</span>
+                Entanglement Lab
+
+            </a>
+
+
+            <div class="nav-divider"></div>
+
+
+            <a href="/learn"
+               class="nav-item">
+
+                <span>📖</span>
+                Learn
+
+            </a>
+
+            <a href="/about"
+               class="nav-item">
+
+                <span>ⓘ</span>
+                About
+
+            </a>
+
+            <a href="/help"
+               class="nav-item">
+
+                <span>?</span>
+                Help
+
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <span class="status-dot"></span>
+
+            Quantum Engine Ready
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- MAIN CONTENT -->
+
+    <main class="main-content">
+
+
+        <div class="page-heading">
+
+            <p class="section-label">
+                LAB 02
+            </p>
+
+            <h1>
+                Quantum Circuit Lab
+            </h1>
+
+            <p>
+                Build a sequence of quantum gates and
+                execute it using the quantum simulator.
+            </p>
+
+        </div>
+
+
+
+        <!-- =========================================
+             GATE LIBRARY
+        ========================================== -->
+
+        <section class="panel">
+
+            <div class="panel-title">
+
+                <div>
+
+                    <span class="panel-number">
+                        01
+                    </span>
+
+                    <h2>
+                        Gate Library
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="gate-library">
+
+
+                <button class="large-gate"
+                        onclick="addCircuitGate('X')">
+
+                    <strong>X</strong>
+
+                    <span>
+                        Pauli-X
+                    </span>
+
+                </button>
+
+
+                <button class="large-gate"
+                        onclick="addCircuitGate('Y')">
+
+                    <strong>Y</strong>
+
+                    <span>
+                        Pauli-Y
+                    </span>
+
+                </button>
+
+
+                <button class="large-gate"
+                        onclick="addCircuitGate('Z')">
+
+                    <strong>Z</strong>
+
+                    <span>
+                        Pauli-Z
+                    </span>
+
+                </button>
+
+
+                <button class="large-gate"
+                        onclick="addCircuitGate('H')">
+
+                    <strong>H</strong>
+
+                    <span>
+                        Hadamard
+                    </span>
+
+                </button>
+
+
+                <button class="large-gate"
+                        onclick="addCircuitGate('S')">
+
+                    <strong>S</strong>
+
+                    <span>
+                        Phase
+                    </span>
+
+                </button>
+
+
+                <button class="large-gate"
+                        onclick="addCircuitGate('T')">
+
+                    <strong>T</strong>
+
+                    <span>
+                        Phase
+                    </span>
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================
+             CIRCUIT
+        ========================================== -->
+
+        <section class="panel">
+
+
+            <div class="panel-title">
+
+                <div>
+
+                    <span class="panel-number">
+                        02
+                    </span>
+
+                    <h2>
+                        Your Quantum Circuit
+                    </h2>
+
+                </div>
+
+
+                <button class="small-btn"
+                        onclick="clearCircuit()">
+
+                    Clear All
+
+                </button>
+
+            </div>
+
+
+
+            <div class="circuit-board">
+
+                <div class="wire">
+
+                    <span class="qubit-label">
+                        q₀
+                    </span>
+
+
+                    <div id="circuitGates"
+                         class="circuit-gates">
+
+                        <span class="empty-circuit">
+                            Add quantum gates above
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="circuit-help">
+
+                <span>
+                    💡
+                </span>
+
+                <p>
+                    Gates are executed from
+                    <strong>left → right</strong>.
+                </p>
+
+            </div>
+
+
+
+            <div class="circuit-actions">
+
+                <button class="primary-btn"
+                        onclick="runCircuit()">
+
+                    ▶ Run Circuit
+
+                </button>
+
+
+                <button class="secondary-btn"
+                        onclick="clearCircuit()">
+
+                    Reset
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================
+             RESULTS
+        ========================================== -->
+
+        <div class="workspace-grid">
+
+
+            <!-- FINAL STATE -->
+
+            <section class="panel">
+
+                <div class="panel-title">
+
+                    <div>
+
+                        <span class="panel-number">
+                            03
+                        </span>
+
+                        <h2>
+                            Final Quantum State
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="output-state"
+                     id="circuitOutput">
+
+                    |0⟩
+
+                </div>
+
+
+                <div class="final-state-label">
+
+                    State after executing
+                    the complete circuit.
+
+                </div>
+
+            </section>
+
+
+
+            <!-- PROBABILITY -->
+
+            <section class="panel">
+
+                <div class="panel-title">
+
+                    <div>
+
+                        <span class="panel-number">
+                            04
+                        </span>
+
+                        <h2>
+                            Output Probabilities
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="mini-results">
+
+
+                    <div>
+
+                        <span>
+                            |0⟩
+                        </span>
+
+                        <strong id="circuitProb0">
+                            100%
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            |1⟩
+                        </span>
+
+                        <strong id="circuitProb1">
+                            0%
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="circuit-progress">
+
+                    <div>
+
+                        <span>
+                            |0⟩
+                        </span>
+
+                        <div class="progress">
+
+                            <div id="circuitBar0"
+                                 class="progress-fill"
+                                 style="width:100%">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            |1⟩
+                        </span>
+
+                        <div class="progress">
+
+                            <div id="circuitBar1"
+                                 class="progress-fill"
+                                 style="width:0%">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+
+        <!-- =========================================
+             STEP-BY-STEP EXECUTION
+        ========================================== -->
+
+        <section class="panel">
+
+
+            <div class="panel-title">
+
+                <div>
+
+                    <span class="panel-number">
+                        05
+                    </span>
+
+                    <h2>
+                        Circuit Execution
+                    </h2>
+
+                </div>
+
+                <span class="live-badge">
+                    ENGINE
+                </span>
+
+            </div>
+
+
+            <div id="circuitSteps"
+                 class="circuit-steps">
+
+                <div class="empty-steps">
+
+                    Run your circuit to see
+                    each quantum operation.
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+</div>
+
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+
+</html>
