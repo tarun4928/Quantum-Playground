@@ -1843,3 +1843,390 @@ individual gates.
 
     border-radius: 10px;
 }
+
+
+
+/* =====================================================
+   EXPLORER SWITCH
+===================================================== */
+
+.explorer-switch {
+    display: flex;
+    gap: 8px;
+    margin: -10px 0 28px;
+    padding: 5px;
+    width: fit-content;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.explorer-tab {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    padding: 10px 16px;
+    border-radius: 7px;
+    font-size: 12px;
+    transition: 0.2s;
+}
+
+.explorer-tab:hover {
+    color: white;
+    background: var(--panel-light);
+}
+
+.explorer-tab.active {
+    color: white;
+    background: rgba(155,108,255,0.14);
+    border-color: rgba(155,108,255,0.25);
+}
+
+.explorer-view {
+    display: none;
+}
+
+.explorer-view.active-view {
+    display: block;
+}
+
+.twoq-intro {
+    margin: 5px 0 25px;
+}
+
+.twoq-intro h2 {
+    font-size: 30px;
+    margin-bottom: 8px;
+}
+
+.twoq-intro p:last-child {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.twoq-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.twoq-qubit-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.twoq-control {
+    padding: 16px;
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.twoq-label {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 10px;
+}
+
+.basis-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.basis-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #080b15;
+    color: white;
+    transition: 0.2s;
+}
+
+.basis-btn:hover {
+    border-color: var(--purple);
+}
+
+.basis-btn.active {
+    background: rgba(155,108,255,0.14);
+    border-color: var(--purple);
+    color: var(--purple);
+}
+
+.twoq-gate-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.twoq-special strong {
+    color: var(--blue) !important;
+}
+
+.twoq-state-display {
+    padding: 28px;
+    text-align: center;
+    border-radius: 12px;
+    background: rgba(155,108,255,0.06);
+    border: 1px solid rgba(155,108,255,0.13);
+}
+
+.twoq-state-display span {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 10px;
+}
+
+.twoq-state-display strong {
+    display: block;
+    color: var(--purple);
+    font-size: 30px;
+    min-height: 36px;
+}
+
+.twoq-formula {
+    margin-top: 15px;
+    padding: 14px;
+    text-align: center;
+    background: rgba(78,156,255,0.05);
+    border: 1px solid rgba(78,156,255,0.12);
+    border-radius: 9px;
+    color: var(--muted);
+    font-family: Georgia, serif;
+}
+
+.twoq-formula strong {
+    color: white;
+    margin-left: 5px;
+}
+
+.state-vector-box {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+}
+
+.state-vector-box div {
+    padding: 14px 6px;
+    text-align: center;
+    background: #080b15;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--purple);
+    font-family: Georgia, serif;
+}
+
+.twoq-status {
+    margin-top: 15px;
+    padding: 11px 13px;
+    border-radius: 8px;
+    background: rgba(66,214,164,0.05);
+    border: 1px solid rgba(66,214,164,0.12);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.twoq-prob-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.twoq-prob-card {
+    padding: 15px;
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.twoq-prob-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.twoq-prob-top strong {
+    color: var(--purple);
+}
+
+.twoq-bottom-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 18px;
+}
+
+.twoq-circuit {
+    position: relative;
+    padding: 18px 10px;
+    background: #080b15;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.twoq-wire {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 55px;
+}
+
+.twoq-wire > span {
+    width: 25px;
+    color: var(--purple);
+    font-weight: bold;
+}
+
+.wire-line {
+    flex: 1;
+    height: 2px;
+    background: #555d79;
+}
+
+.wire-gate {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--purple);
+    border-radius: 7px;
+    color: var(--purple);
+    background: var(--panel);
+    font-weight: bold;
+}
+
+.cnot-visual {
+    position: absolute;
+    right: 62px;
+    top: 18px;
+    height: 110px;
+    width: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+}
+
+.control-dot-2q {
+    width: 13px;
+    height: 13px;
+    margin-top: 15px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 12px rgba(78,156,255,0.35);
+}
+
+.control-line-2q {
+    width: 2px;
+    height: 46px;
+    background: var(--blue);
+}
+
+.target-plus-2q {
+    width: 30px;
+    height: 30px;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--blue);
+    border-radius: 50%;
+    color: var(--blue);
+    background: var(--panel);
+    font-weight: bold;
+}
+
+.twoq-hint {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+    margin-top: 12px;
+}
+
+.entanglement-meter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.entanglement-meter span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.entanglement-meter strong {
+    color: var(--purple);
+    font-size: 25px;
+}
+
+.entanglement-bar {
+    height: 9px;
+    margin-top: 12px;
+    background: #080b15;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.entanglement-bar div {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--purple), var(--blue));
+    transition: width 0.4s;
+}
+
+.entanglement-result {
+    margin-top: 13px;
+    padding: 13px;
+    text-align: center;
+    border-radius: 8px;
+    background: rgba(155,108,255,0.06);
+    color: white;
+    font-size: 12px;
+    border: 1px solid rgba(155,108,255,0.12);
+}
+
+.full-btn {
+    width: 100%;
+    margin-top: 15px;
+}
+
+@media (max-width: 1000px) {
+    .twoq-grid,
+    .twoq-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .explorer-switch {
+        width: 100%;
+    }
+
+    .explorer-tab {
+        flex: 1;
+    }
+
+    .twoq-qubit-row,
+    .twoq-prob-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .twoq-gate-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .state-vector-box {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

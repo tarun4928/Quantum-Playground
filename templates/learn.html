@@ -1,185 +1,1807 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Learn | Quantum Playground</title>
+    <title>Quantum Principles | Quantum Playground</title>
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #08111f;
+            color: #eaf2ff;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1250px;
+            margin: auto;
+            padding: 35px 0 70px;
+        }
+
+
+        /* HEADER */
+
+        .header {
+            text-align: center;
+            margin-bottom: 45px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #9fb3cc;
+            font-size: 18px;
+        }
+
+        .tag {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 7px 15px;
+            border-radius: 20px;
+            background: #172942;
+            color: #69a9ff;
+            font-size: 13px;
+        }
+
+
+        /* SECTIONS */
+
+        .section {
+            margin-bottom: 45px;
+        }
+
+        .section-title {
+            font-size: 29px;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            color: #9fb3cc;
+            margin-bottom: 22px;
+        }
+
+
+        /* CARDS */
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #101d30;
+            border: 1px solid #223854;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.18);
+        }
+
+        .card h3 {
+            font-size: 21px;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .card p {
+            color: #b8c8dc;
+            margin-bottom: 12px;
+        }
+
+        .important {
+            border-left: 4px solid #4d9cff;
+        }
+
+        .advanced {
+            border-left: 4px solid #a970ff;
+        }
+
+        .two-qubit {
+            border-left: 4px solid #32d6a0;
+        }
+
+
+        /* EQUATIONS */
+
+        .equation {
+            background: #07101d;
+            border: 1px solid #243b58;
+            border-radius: 12px;
+            padding: 18px;
+            margin: 15px 0;
+            text-align: center;
+            overflow-x: auto;
+        }
+
+
+        /* STATE BOX */
+
+        .state-box {
+            text-align: center;
+            background: #0c192a;
+            border: 1px solid #29415f;
+            border-radius: 14px;
+            padding: 22px;
+            margin-top: 15px;
+        }
+
+        .state-box .big {
+            font-size: 25px;
+            margin: 10px 0;
+        }
+
+
+        /* FLOW */
+
+        .flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 25px 0;
+        }
+
+        .flow-box {
+            background: #14253c;
+            border: 1px solid #315071;
+            padding: 14px 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .arrow {
+            color: #68aaff;
+            font-size: 24px;
+        }
+
+
+        /* TABLE */
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            border: 1px solid #29415f;
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background: #172942;
+            color: #ffffff;
+        }
+
+        td {
+            color: #c4d2e3;
+            background: #0c1828;
+        }
+
+
+        /* CIRCUIT */
+
+        .circuit {
+            background: #07101d;
+            border: 1px solid #29415f;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 18px 0;
+            font-family: "Courier New", monospace;
+            font-size: 18px;
+            overflow-x: auto;
+        }
+
+        .circuit-line {
+            margin: 12px 0;
+            white-space: nowrap;
+        }
+
+
+        /* IDENTITIES */
+
+        .identity {
+            text-align: center;
+            padding: 25px;
+            border-radius: 14px;
+            background: #0d1a2b;
+            border: 1px solid #29415f;
+        }
+
+        .identity h3 {
+            margin-bottom: 18px;
+        }
+
+        .identity .formula {
+            font-size: 24px;
+            margin: 15px 0;
+        }
+
+        .identity p {
+            font-size: 14px;
+            color: #aebfd3;
+        }
+
+
+        /* TWO-QUBIT BUTTONS */
+
+        .qubit-selector {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .qubit-btn {
+            background: #14253c;
+            color: #ffffff;
+            border: 1px solid #315071;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .qubit-btn:hover {
+            background: #1e3858;
+            transform: translateY(-2px);
+        }
+
+        .qubit-btn.active {
+            background: #245a83;
+            border-color: #69a9ff;
+        }
+
+
+        /* VECTOR */
+
+        .vector-display {
+            font-size: 20px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+
+        /* FOOTER */
+
+        .footer {
+            margin-top: 55px;
+            text-align: center;
+            color: #7f94ae;
+            font-size: 14px;
+        }
+
+
+        /* MOBILE */
+
+        @media (max-width: 700px) {
+
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            .container {
+                width: 94%;
+            }
+
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
-<div class="app-container">
+<div class="container">
 
-    <aside class="sidebar">
 
-        <div class="logo">
-            <div class="logo-icon">⚛</div>
-            <div>
-                <h2>Quantum</h2>
-                <span>Playground</span>
-            </div>
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <h1>Quantum Principles</h1>
+
+        <p>
+            Mathematical foundations and physical principles behind
+            Quantum Playground
+        </p>
+
+        <div class="tag">
+            Engineering Physics • Module 5 • Quantum Computing
         </div>
 
-        <nav>
-
-            <a href="/" class="nav-item">
-                <span>⌂</span> Home
-            </a>
-
-            <a href="/explore" class="nav-item">
-                <span>◉</span> Explore
-            </a>
-
-            <a href="/circuit" class="nav-item">
-                <span>⚡</span> Circuit Lab
-            </a>
-
-            <a href="/measurement" class="nav-item">
-                <span>▥</span> Measurement Lab
-            </a>
-
-            <a href="/entanglement" class="nav-item">
-                <span>∞</span> Entanglement Lab
-            </a>
-
-            <div class="nav-divider"></div>
-
-            <a href="/learn" class="nav-item active">
-                <span>📖</span> Learn
-            </a>
-
-            <a href="/about" class="nav-item">
-                <span>ⓘ</span> About
-            </a>
-
-            <a href="/help" class="nav-item">
-                <span>?</span> Help
-            </a>
-
-        </nav>
-
-    </aside>
+    </div>
 
 
-    <main class="main-content">
 
-        <div class="page-heading">
+    <!-- 1. QUBIT -->
 
-            <p class="section-label">LEARNING CENTER</p>
+    <section class="section">
 
-            <h1>Learn Quantum Computing</h1>
+        <h2 class="section-title">
+            1. From Classical Bits to Qubits
+        </h2>
+
+        <p class="section-subtitle">
+            The qubit is the fundamental unit of quantum information.
+        </p>
+
+        <div class="grid">
+
+            <div class="card">
+
+                <h3>Classical Bit</h3>
+
+                <p>
+                    A classical bit can exist in one of two states:
+                </p>
+
+                <div class="equation">
+
+                    \[
+                    0 \quad \text{or} \quad 1
+                    \]
+
+                </div>
+
+            </div>
+
+
+            <div class="card important">
+
+                <h3>Quantum Bit — Qubit</h3>
+
+                <p>
+                    A qubit can exist in a superposition of the two
+                    computational basis states.
+                </p>
+
+                <div class="equation">
+
+                    \[
+                    |\psi\rangle =
+                    \alpha|0\rangle+\beta|1\rangle
+                    \]
+
+                </div>
+
+                <p>
+                    Here \(\alpha\) and \(\beta\) are complex probability
+                    amplitudes.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 2. SUPERPOSITION -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            2. Superposition Principle
+        </h2>
+
+        <p class="section-subtitle">
+            A quantum state can be expressed as a linear combination
+            of basis states.
+        </p>
+
+        <div class="card important">
+
+            <h3>General Single-Qubit State</h3>
+
+            <div class="equation">
+
+                \[
+                |\psi\rangle =
+                \alpha|0\rangle+\beta|1\rangle
+                \]
+
+            </div>
 
             <p>
-                Understand the concepts behind the experiments
-                in Quantum Playground.
+                The state must satisfy the normalization condition:
+            </p>
+
+            <div class="equation">
+
+                \[
+                |\alpha|^2+|\beta|^2=1
+                \]
+
+            </div>
+
+            <p>
+                This ensures that the total probability of all possible
+                measurement outcomes is equal to one.
             </p>
 
         </div>
 
 
-        <section class="learning-grid">
+        <div class="flow">
 
-            <article class="lesson-card">
+            <div class="flow-box">
+                \(|0\rangle\)
+            </div>
 
-                <span class="lesson-number">01</span>
+            <div class="arrow">→</div>
 
-                <h2>What is a Qubit?</h2>
+            <div class="flow-box">
+                Hadamard \(H\)
+            </div>
 
-                <p>
-                    A qubit is the basic unit of quantum information.
-                    Unlike a classical bit, a qubit can exist in a
-                    combination of the states |0⟩ and |1⟩.
-                </p>
+            <div class="arrow">→</div>
 
-                <div class="formula">
-                    |ψ⟩ = α|0⟩ + β|1⟩
+            <div class="flow-box">
+
+                \[
+                \frac{|0\rangle+|1\rangle}{\sqrt2}
+                \]
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 3. BORN RULE -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            3. Born Rule — Measurement
+        </h2>
+
+        <p class="section-subtitle">
+            Measurement probabilities are obtained from the squared
+            magnitudes of probability amplitudes.
+        </p>
+
+        <div class="grid">
+
+            <div class="card">
+
+                <h3>Probability of measuring 0</h3>
+
+                <div class="equation">
+
+                    \[
+                    P(0)=|\alpha|^2
+                    \]
+
                 </div>
 
-            </article>
+            </div>
 
 
-            <article class="lesson-card">
+            <div class="card">
 
-                <span class="lesson-number">02</span>
+                <h3>Probability of measuring 1</h3>
 
-                <h2>Quantum Gates</h2>
+                <div class="equation">
 
-                <p>
-                    Quantum gates transform quantum states.
-                    Common gates include X, Y, Z and H.
-                </p>
+                    \[
+                    P(1)=|\beta|^2
+                    \]
 
-                <div class="formula">
-                    New State = Gate × Old State
                 </div>
 
-            </article>
+            </div>
+
+        </div>
 
 
-            <article class="lesson-card">
+        <div class="state-box">
 
-                <span class="lesson-number">03</span>
+            <p>Example:</p>
 
-                <h2>Measurement</h2>
+            <div class="big">
+
+                \[
+                |\psi\rangle =
+                \frac{\sqrt3}{2}|0\rangle+
+                \frac12|1\rangle
+                \]
+
+            </div>
+
+            <div class="equation">
+
+                \[
+                P(0)=75\%, \qquad P(1)=25\%
+                \]
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 4. BLOCH SPHERE -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            4. Bloch Sphere
+        </h2>
+
+        <p class="section-subtitle">
+            A geometric representation of a pure single-qubit state.
+        </p>
+
+        <div class="card">
+
+            <h3>General Bloch-Sphere Representation</h3>
+
+            <div class="equation">
+
+                \[
+                |\psi\rangle =
+                \cos\frac{\theta}{2}|0\rangle+
+                e^{i\phi}\sin\frac{\theta}{2}|1\rangle
+                \]
+
+            </div>
+
+            <p>
+                \(\theta\) determines the polar angle, while \(\phi\)
+                represents the relative phase.
+            </p>
+
+            <div class="grid">
+
+                <div class="state-box">
+
+                    <div class="big">
+                        \[
+                        |0\rangle
+                        \]
+                    </div>
+
+                    <p>North Pole</p>
+
+                </div>
+
+
+                <div class="state-box">
+
+                    <div class="big">
+                        \[
+                        |1\rangle
+                        \]
+                    </div>
+
+                    <p>South Pole</p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 5. PAULI MATRICES -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            5. Pauli Operators
+        </h2>
+
+        <p class="section-subtitle">
+            Pauli matrices represent fundamental single-qubit operations.
+        </p>
+
+        <div class="grid">
+
+
+            <div class="card">
+
+                <h3>Pauli-X</h3>
+
+                <div class="equation">
+
+                    \[
+                    X=
+                    \begin{pmatrix}
+                    0&1\\
+                    1&0
+                    \end{pmatrix}
+                    \]
+
+                </div>
 
                 <p>
-                    Measuring a quantum state produces an outcome
-                    according to its probability distribution.
+                    Acts as a bit flip:
                 </p>
 
-            </article>
+                <div class="equation">
+
+                    \[
+                    X|0\rangle=|1\rangle
+                    \]
+
+                    \[
+                    X|1\rangle=|0\rangle
+                    \]
+
+                </div>
+
+            </div>
 
 
-            <article class="lesson-card">
+            <div class="card">
 
-                <span class="lesson-number">04</span>
+                <h3>Pauli-Y</h3>
 
-                <h2>Entanglement</h2>
+                <div class="equation">
+
+                    \[
+                    Y=
+                    \begin{pmatrix}
+                    0&-i\\
+                    i&0
+                    \end{pmatrix}
+                    \]
+
+                </div>
 
                 <p>
-                    Entanglement creates strong quantum correlations
-                    between two or more qubits.
+                    Performs a combined bit and phase transformation.
                 </p>
 
-            </article>
+            </div>
 
 
-            <article class="lesson-card">
+            <div class="card">
 
-                <span class="lesson-number">05</span>
+                <h3>Pauli-Z</h3>
 
-                <h2>Bloch Sphere</h2>
+                <div class="equation">
+
+                    \[
+                    Z=
+                    \begin{pmatrix}
+                    1&0\\
+                    0&-1
+                    \end{pmatrix}
+                    \]
+
+                </div>
 
                 <p>
-                    The Bloch sphere provides a geometric way to
-                    visualize the state of a single qubit.
+                    Leaves \(|0\rangle\) unchanged and changes the phase
+                    of \(|1\rangle\).
                 </p>
 
-            </article>
+                <div class="equation">
+
+                    \[
+                    Z|0\rangle=|0\rangle
+                    \]
+
+                    \[
+                    Z|1\rangle=-|1\rangle
+                    \]
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
 
 
-            <article class="lesson-card">
 
-                <span class="lesson-number">06</span>
+    <!-- 6. HADAMARD -->
 
-                <h2>Quantum Circuits</h2>
+    <section class="section">
+
+        <h2 class="section-title">
+            6. Hadamard Gate
+        </h2>
+
+        <p class="section-subtitle">
+            The Hadamard gate creates and removes equal superposition.
+        </p>
+
+        <div class="card important">
+
+            <div class="equation">
+
+                \[
+                H=
+                \frac{1}{\sqrt2}
+                \begin{pmatrix}
+                1&1\\
+                1&-1
+                \end{pmatrix}
+                \]
+
+            </div>
+
+            <div class="grid">
+
+                <div class="state-box">
+
+                    \[
+                    H|0\rangle=
+                    \frac{|0\rangle+|1\rangle}{\sqrt2}
+                    \]
+
+                </div>
+
+                <div class="state-box">
+
+                    \[
+                    H|1\rangle=
+                    \frac{|0\rangle-|1\rangle}{\sqrt2}
+                    \]
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 7. GATE IDENTITIES -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            7. Important Quantum Gate Identities
+        </h2>
+
+        <p class="section-subtitle">
+            These identities show how quantum gates transform one
+            type of operation into another.
+        </p>
+
+        <div class="grid">
+
+
+            <div class="identity">
+
+                <h3>Phase Flip → Bit Flip</h3>
+
+                <div class="formula">
+
+                    \[
+                    HZH=X
+                    \]
+
+                </div>
 
                 <p>
-                    Quantum circuits combine qubits and gates into
-                    sequences that perform quantum operations.
+                    Applying Hadamard before and after \(Z\) transforms
+                    the operation into \(X\).
                 </p>
 
-            </article>
+            </div>
 
-        </section>
 
-    </main>
+            <div class="identity">
+
+                <h3>Bit Flip → Phase Flip</h3>
+
+                <div class="formula">
+
+                    \[
+                    HXH=Z
+                    \]
+
+                </div>
+
+                <p>
+                    Applying Hadamard before and after \(X\) transforms
+                    the operation into \(Z\).
+                </p>
+
+            </div>
+
+
+            <div class="identity advanced">
+
+                <h3>Y-Axis Direction Reversal</h3>
+
+                <div class="formula">
+
+                    \[
+                    HYH=-Y
+                    \]
+
+                </div>
+
+                <p>
+                    The minus sign represents a phase factor of \(-1\).
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 8. TWO QUBIT SYSTEM -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            8. Two-Qubit Systems
+        </h2>
+
+        <p class="section-subtitle">
+            Two qubits form a four-dimensional quantum state space.
+        </p>
+
+
+        <div class="card two-qubit">
+
+            <h3>Computational Basis</h3>
+
+            <p>
+                A two-qubit system has four computational basis states:
+            </p>
+
+            <div class="equation">
+
+                \[
+                |00\rangle,\quad
+                |01\rangle,\quad
+                |10\rangle,\quad
+                |11\rangle
+                \]
+
+            </div>
+
+            <p>
+                The two qubits are combined using the tensor product:
+            </p>
+
+            <div class="equation">
+
+                \[
+                |a\rangle\otimes|b\rangle=|ab\rangle
+                \]
+
+            </div>
+
+        </div>
+
+
+        <!-- INTERACTIVE TWO QUBITS -->
+
+        <div class="card two-qubit" style="margin-top:20px;">
+
+            <h3>Interactive Two-Qubit State</h3>
+
+            <p>
+                Select the state of each qubit and observe the resulting
+                two-qubit basis state and state vector.
+            </p>
+
+
+            <div class="grid">
+
+
+                <!-- QUBIT 1 -->
+
+                <div class="state-box">
+
+                    <h3>Qubit 1</h3>
+
+                    <div class="qubit-selector">
+
+                        <button
+                            id="q1-0"
+                            class="qubit-btn active"
+                            onclick="selectQubit1(0)">
+                            |0⟩
+                        </button>
+
+                        <button
+                            id="q1-1"
+                            class="qubit-btn"
+                            onclick="selectQubit1(1)">
+                            |1⟩
+                        </button>
+
+                    </div>
+
+                    <div class="big" id="qubit1Display">
+                        |0⟩
+                    </div>
+
+                </div>
+
+
+                <!-- QUBIT 2 -->
+
+                <div class="state-box">
+
+                    <h3>Qubit 2</h3>
+
+                    <div class="qubit-selector">
+
+                        <button
+                            id="q2-0"
+                            class="qubit-btn active"
+                            onclick="selectQubit2(0)">
+                            |0⟩
+                        </button>
+
+                        <button
+                            id="q2-1"
+                            class="qubit-btn"
+                            onclick="selectQubit2(1)">
+                            |1⟩
+                        </button>
+
+                    </div>
+
+                    <div class="big" id="qubit2Display">
+                        |0⟩
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- COMBINED STATE -->
+
+            <div class="state-box">
+
+                <p>Combined two-qubit state:</p>
+
+                <div class="big" id="combinedState">
+                    |00⟩
+                </div>
+
+                <div class="equation" id="tensorEquation">
+
+                    \[
+                    |0\rangle\otimes|0\rangle=|00\rangle
+                    \]
+
+                </div>
+
+            </div>
+
+
+            <!-- STATE VECTOR -->
+
+            <div class="state-box">
+
+                <p>Corresponding state vector:</p>
+
+                <div
+                    class="vector-display"
+                    id="stateVector">
+
+                    \[
+                    |00\rangle=
+                    \begin{bmatrix}
+                    1\\
+                    0\\
+                    0\\
+                    0
+                    \end{bmatrix}
+                    \]
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- GENERAL TWO QUBIT STATE -->
+
+        <div class="card" style="margin-top:20px;">
+
+            <h3>General Two-Qubit State</h3>
+
+            <p>
+                A general two-qubit state is a superposition of all
+                four computational basis states:
+            </p>
+
+            <div class="equation">
+
+                \[
+                |\psi\rangle =
+                \alpha|00\rangle+
+                \beta|01\rangle+
+                \gamma|10\rangle+
+                \delta|11\rangle
+                \]
+
+            </div>
+
+            <p>
+                The normalization condition is:
+            </p>
+
+            <div class="equation">
+
+                \[
+                |\alpha|^2+
+                |\beta|^2+
+                |\gamma|^2+
+                |\delta|^2=1
+                \]
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 9. CNOT -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            9. CNOT — Controlled-NOT Gate
+        </h2>
+
+        <p class="section-subtitle">
+            A two-qubit gate where one qubit controls a NOT operation
+            on another qubit.
+        </p>
+
+        <div class="card two-qubit">
+
+            <h3>Basic Operation</h3>
+
+            <p>
+                The target qubit is flipped only when the control qubit
+                is in state \(1\).
+            </p>
+
+            <div class="circuit">
+
+                <div class="circuit-line">
+                    q₀ (control) ─────●─────
+                </div>
+
+                <div class="circuit-line">
+                    q₁ (target)  ─────⊕─────
+                </div>
+
+            </div>
+
+
+            <div class="equation">
+
+                \[
+                CNOT=
+                \begin{pmatrix}
+                1&0&0&0\\
+                0&1&0&0\\
+                0&0&0&1\\
+                0&0&1&0
+                \end{pmatrix}
+                \]
+
+            </div>
+
+        </div>
+
+
+        <table>
+
+            <tr>
+                <th>Input</th>
+                <th>Output</th>
+            </tr>
+
+            <tr>
+                <td>\(|00\rangle\)</td>
+                <td>\(|00\rangle\)</td>
+            </tr>
+
+            <tr>
+                <td>\(|01\rangle\)</td>
+                <td>\(|01\rangle\)</td>
+            </tr>
+
+            <tr>
+                <td>\(|10\rangle\)</td>
+                <td>\(|11\rangle\)</td>
+            </tr>
+
+            <tr>
+                <td>\(|11\rangle\)</td>
+                <td>\(|10\rangle\)</td>
+            </tr>
+
+        </table>
+
+    </section>
+
+
+
+    <!-- 10. CZ -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            10. Controlled-Z Gate
+        </h2>
+
+        <div class="card two-qubit">
+
+            <h3>Controlled Phase Operation</h3>
+
+            <p>
+                The CZ gate introduces a phase flip when both qubits
+                are in state \(1\).
+            </p>
+
+            <div class="equation">
+
+                \[
+                CZ=
+                \begin{pmatrix}
+                1&0&0&0\\
+                0&1&0&0\\
+                0&0&1&0\\
+                0&0&0&-1
+                \end{pmatrix}
+                \]
+
+            </div>
+
+            <div class="equation">
+
+                \[
+                |00\rangle\rightarrow|00\rangle
+                \]
+
+                \[
+                |01\rangle\rightarrow|01\rangle
+                \]
+
+                \[
+                |10\rangle\rightarrow|10\rangle
+                \]
+
+                \[
+                |11\rangle\rightarrow-|11\rangle
+                \]
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 11. SWAP -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            11. SWAP Gate
+        </h2>
+
+        <div class="card two-qubit">
+
+            <h3>Exchange of Two Qubits</h3>
+
+            <p>
+                The SWAP gate exchanges the states of two qubits.
+            </p>
+
+            <div class="equation">
+
+                \[
+                SWAP=
+                \begin{pmatrix}
+                1&0&0&0\\
+                0&0&1&0\\
+                0&1&0&0\\
+                0&0&0&1
+                \end{pmatrix}
+                \]
+
+            </div>
+
+            <div class="equation">
+
+                \[
+                |00\rangle\rightarrow|00\rangle
+                \]
+
+                \[
+                |01\rangle\rightarrow|10\rangle
+                \]
+
+                \[
+                |10\rangle\rightarrow|01\rangle
+                \]
+
+                \[
+                |11\rangle\rightarrow|11\rangle
+                \]
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 12. ENTANGLEMENT -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            12. Quantum Entanglement
+        </h2>
+
+        <p class="section-subtitle">
+            Two quantum systems can share a joint state that cannot
+            be described as independent single-qubit states.
+        </p>
+
+        <div class="card advanced">
+
+            <h3>Bell State — \(\Phi^+\)</h3>
+
+            <div class="equation">
+
+                \[
+                |\Phi^+\rangle=
+                \frac{|00\rangle+|11\rangle}{\sqrt2}
+                \]
+
+            </div>
+
+            <p>
+                Measuring both qubits in the computational basis gives
+                perfectly correlated results.
+            </p>
+
+            <div class="equation">
+
+                \[
+                P(00)=50\%
+                \]
+
+                \[
+                P(11)=50\%
+                \]
+
+                \[
+                P(01)=P(10)=0
+                \]
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 13. BELL STATE GENERATION -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            13. Generating a Bell State
+        </h2>
+
+        <p class="section-subtitle">
+            A Hadamard gate followed by CNOT can generate an entangled state.
+        </p>
+
+        <div class="circuit">
+
+            <div class="circuit-line">
+                q₀ ─── H ─────●────
+            </div>
+
+            <div class="circuit-line">
+                q₁ ───────────⊕────
+            </div>
+
+        </div>
+
+
+        <div class="equation">
+
+            \[
+            |00\rangle
+            \xrightarrow{H\otimes I}
+            \frac{|00\rangle+|10\rangle}{\sqrt2}
+            \]
+
+            \[
+            \xrightarrow{CNOT}
+            \frac{|00\rangle+|11\rangle}{\sqrt2}
+            \]
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 14. MINUS SIGN -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            14. Understanding the Minus Sign
+        </h2>
+
+        <p class="section-subtitle">
+            A negative sign in a quantum state can represent a phase factor.
+        </p>
+
+        <div class="card advanced">
+
+            <h3>Example</h3>
+
+            <div class="equation">
+
+                \[
+                Z|1\rangle=-|1\rangle
+                \]
+
+            </div>
+
+            <p>
+                The minus sign does not mean that the probability is negative.
+                It represents a phase change of \(\pi\) radians.
+            </p>
+
+            <div class="equation">
+
+                \[
+                |-1|^2=1
+                \]
+
+            </div>
+
+            <p>
+                Therefore the probability remains positive, while the
+                relative phase can affect quantum interference.
+            </p>
+
+        </div>
+
+
+        <div class="grid">
+
+            <div class="identity">
+
+                <h3>Gate Identity</h3>
+
+                <div class="formula">
+
+                    \[
+                    HYH=-Y
+                    \]
+
+                </div>
+
+                <p>
+                    The negative sign represents the factor \(-1\).
+                </p>
+
+            </div>
+
+
+            <div class="identity">
+
+                <h3>Two-Qubit Example</h3>
+
+                <div class="formula">
+
+                    \[
+                    CZ|11\rangle=-|11\rangle
+                    \]
+
+                </div>
+
+                <p>
+                    The amplitude changes sign while the measurement
+                    probability remains unchanged.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 15. PROJECT CONNECTION -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            15. How Quantum Playground Demonstrates the Physics
+        </h2>
+
+        <div class="flow">
+
+            <div class="flow-box">
+                Qubit
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="flow-box">
+                Quantum Gate
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="flow-box">
+                State Vector
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="flow-box">
+                Visualization
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="flow-box">
+                Measurement
+            </div>
+
+        </div>
+
+
+        <div class="grid">
+
+            <div class="card">
+
+                <h3>Single-Qubit Simulation</h3>
+
+                <p>
+                    Apply quantum gates and observe changes in the
+                    qubit state.
+                </p>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>Two-Qubit Simulation</h3>
+
+                <p>
+                    Study two-qubit basis states, CNOT, Bell states
+                    and entanglement.
+                </p>
+
+            </div>
+
+
+            <div class="card">
+
+                <h3>Measurement</h3>
+
+                <p>
+                    Compare theoretical probabilities with repeated
+                    measurement outcomes.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 16. BEYOND SYLLABUS -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            16. Beyond the Prescribed Syllabus
+        </h2>
+
+        <div class="grid">
+
+
+            <div class="card advanced">
+
+                <h3>No-Cloning Theorem</h3>
+
+                <p>
+                    An arbitrary unknown quantum state cannot be perfectly
+                    copied by a universal quantum operation.
+                </p>
+
+            </div>
+
+
+            <div class="card advanced">
+
+                <h3>Bell's Theorem</h3>
+
+                <p>
+                    Bell's theorem provides a way to test whether quantum
+                    correlations can be explained by local hidden-variable
+                    theories.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 17. SUMMARY -->
+
+    <section class="section">
+
+        <h2 class="section-title">
+            17. Quantum Playground — Concept Map
+        </h2>
+
+        <div class="card">
+
+            <div class="flow">
+
+                <div class="flow-box">
+                    Qubit
+                </div>
+
+                <div class="arrow">→</div>
+
+                <div class="flow-box">
+                    Superposition
+                </div>
+
+                <div class="arrow">→</div>
+
+                <div class="flow-box">
+                    Gates
+                </div>
+
+                <div class="arrow">→</div>
+
+                <div class="flow-box">
+                    Two Qubits
+                </div>
+
+                <div class="arrow">→</div>
+
+                <div class="flow-box">
+                    Entanglement
+                </div>
+
+                <div class="arrow">→</div>
+
+                <div class="flow-box">
+                    Measurement
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <div class="footer">
+
+        Quantum Playground • Interactive Quantum Physics Simulation
+
+    </div>
 
 </div>
 
+
+
+<!-- TWO-QUBIT JAVASCRIPT -->
+
+<script>
+
+    let qubit1 = 0;
+    let qubit2 = 0;
+
+
+    function selectQubit1(value) {
+
+        qubit1 = value;
+
+        document.getElementById("qubit1Display").innerHTML =
+            value === 0 ? "|0⟩" : "|1⟩";
+
+        document.getElementById("q1-0").classList.remove("active");
+        document.getElementById("q1-1").classList.remove("active");
+
+        document.getElementById("q1-" + value).classList.add("active");
+
+        updateTwoQubit();
+
+    }
+
+
+    function selectQubit2(value) {
+
+        qubit2 = value;
+
+        document.getElementById("qubit2Display").innerHTML =
+            value === 0 ? "|0⟩" : "|1⟩";
+
+        document.getElementById("q2-0").classList.remove("active");
+        document.getElementById("q2-1").classList.remove("active");
+
+        document.getElementById("q2-" + value).classList.add("active");
+
+        updateTwoQubit();
+
+    }
+
+
+    function updateTwoQubit() {
+
+        const state = "|" + qubit1 + qubit2 + "⟩";
+
+        document.getElementById("combinedState").innerHTML = state;
+
+
+        document.getElementById("tensorEquation").innerHTML =
+            "\\[" +
+            "|" + qubit1 + "\\rangle \\otimes |" +
+            qubit2 + "\\rangle = " +
+            state +
+            "\\]";
+
+
+        let vector = "";
+
+
+        if (qubit1 === 0 && qubit2 === 0) {
+
+            vector =
+                "\\[" +
+                "|00\\rangle=" +
+                "\\begin{bmatrix}" +
+                "1\\\\0\\\\0\\\\0" +
+                "\\end{bmatrix}" +
+                "\\]";
+
+        }
+
+
+        else if (qubit1 === 0 && qubit2 === 1) {
+
+            vector =
+                "\\[" +
+                "|01\\rangle=" +
+                "\\begin{bmatrix}" +
+                "0\\\\1\\\\0\\\\0" +
+                "\\end{bmatrix}" +
+                "\\]";
+
+        }
+
+
+        else if (qubit1 === 1 && qubit2 === 0) {
+
+            vector =
+                "\\[" +
+                "|10\\rangle=" +
+                "\\begin{bmatrix}" +
+                "0\\\\0\\\\1\\\\0" +
+                "\\end{bmatrix}" +
+                "\\]";
+
+        }
+
+
+        else {
+
+            vector =
+                "\\[" +
+                "|11\\rangle=" +
+                "\\begin{bmatrix}" +
+                "0\\\\0\\\\0\\\\1" +
+                "\\end{bmatrix}" +
+                "\\]";
+
+        }
+
+
+        document.getElementById("stateVector").innerHTML = vector;
+
+        MathJax.typesetPromise();
+
+    }
+
+
+</script>
+
+
 </body>
+
 </html>

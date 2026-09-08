@@ -1,75 +1,218 @@
-let circuit = [];
+/* =====================================================
+   QUANTUM PLAYGROUND
+   Main JavaScript
+===================================================== */
 
 
 /* =====================================================
-   INITIALIZATION
+   GLOBAL STATE
 ===================================================== */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+let currentState = null;
 
-        loadCurrentState();
 
-        initializeBlochSphere();
+/* =====================================================
+   QUANTUM STATE FORMATTING
+===================================================== */
 
+function formatQuantumState(state) {
+
+    if (!state || state.length === 0) {
+        return "|0⟩";
     }
-);
 
+    const terms = [];
 
-/* =====================================================
-   LOAD CURRENT STATE
-===================================================== */
+    state.forEach((amplitude, index) => {
 
-async function loadCurrentState() {
+        let real = 0;
+        let imag = 0;
 
-    try {
+        if (typeof amplitude === "object") {
+            real = amplitude.real ?? amplitude.re ?? 0;
+            imag = amplitude.imag ?? amplitude.im ?? 0;
+        }
+        else if (typeof amplitude === "number") {
+            real = amplitude;
+        }
 
-        const response =
-            await fetch("/api/state");
+        if (Math.abs(real) < 0.0001) real = 0;
+        if (Math.abs(imag) < 0.0001) imag = 0;
 
-
-        const data =
-            await response.json();
-
-
-        if (!data.success) {
+        if (real === 0 && imag === 0) {
             return;
         }
 
+        const basis = `|${index}⟩`;
 
-        updateQubitDisplay(data);
+        if (imag === 0) {
+
+            if (real === 1) {
+                terms.push(basis);
+            }
+            else if (real === -1) {
+                terms.push(`-${basis}`);
+            }
+            else {
+                terms.push(`${real.toFixed(3)}${basis}`);
+            }
+
+        }
+        else {
+
+            let value = `${real.toFixed(3)}`;
+
+            if (imag >= 0) {
+                value += ` + ${imag.toFixed(3)}i`;
+            }
+            else {
+                value += ` - ${Math.abs(imag).toFixed(3)}i`;
+            }
+
+            terms.push(`(${value})${basis}`);
+        }
+    });
+
+    return terms.join(" + ") || "0";
+}
+
+
+/* =====================================================
+   LOAD SINGLE-QUBIT STATE
+===================================================== */
+
+async function loadState() {
+
+    try {
+
+        const response = await fetch("/api/state");
+
+        const data = await response.json();
+
+        if (!data.success) {
+            console.error(data.error);
+            return;
+        }
+
+        currentState = data.state;
+
+        updateSingleQubitDisplay(data);
 
     }
-
     catch (error) {
 
         console.error(
-            "State loading error:",
+            "Could not connect to Quantum Engine.",
             error
         );
 
     }
+}
+
+
+/* =====================================================
+   SINGLE-QUBIT DISPLAY
+===================================================== */
+
+function updateSingleQubitDisplay(data) {
+
+    const stateElement =
+        document.getElementById("currentState");
+
+    const outputElement =
+        document.getElementById("stateOutput");
+
+    const probability0 =
+        document.getElementById("prob0");
+
+    const probability1 =
+        document.getElementById("prob1");
+
+    const bar0 =
+        document.getElementById("bar0");
+
+    const bar1 =
+        document.getElementById("bar1");
+
+
+    if (stateElement) {
+
+        stateElement.textContent =
+            formatQuantumState(data.state);
+
+    }
+
+
+    if (outputElement) {
+
+        outputElement.textContent =
+            formatQuantumState(data.state);
+
+    }
+
+
+    if (data.probabilities) {
+
+        const p0 =
+            data.probabilities[0] ?? 0;
+
+        const p1 =
+            data.probabilities[1] ?? 0;
+
+
+        if (probability0) {
+
+            probability0.textContent =
+                `${(p0 * 100).toFixed(1)}%`;
+
+        }
+
+
+        if (probability1) {
+
+            probability1.textContent =
+                `${(p1 * 100).toFixed(1)}%`;
+
+        }
+
+
+        if (bar0) {
+
+            bar0.style.width =
+                `${p0 * 100}%`;
+
+        }
+
+
+        if (bar1) {
+
+            bar1.style.width =
+                `${p1 * 100}%`;
+
+        }
+    }
+
+
+    updateBlochSphere(data);
 
 }
 
 
 /* =====================================================
-   SINGLE QUBIT GATES
+   APPLY SINGLE-QUBIT GATE
 ===================================================== */
 
-async function applyGate(gate) {
+async function applyGate(gateName) {
 
     try {
 
         const response =
             await fetch(
-                `/api/gate/${gate}`,
+                `/api/gate/${gateName}`,
                 {
                     method: "POST"
                 }
             );
-
 
         const data =
             await response.json();
@@ -78,36 +221,19 @@ async function applyGate(gate) {
         if (!data.success) {
 
             alert(
-                "Quantum Engine Error: " +
+                "Gate Error: " +
                 data.error
             );
 
             return;
-
         }
 
 
-        updateQubitDisplay({
+        currentState = data.state;
 
-            state:
-                data.after_state,
-
-            after_state:
-                data.after_state,
-
-            probabilities:
-                data.probabilities,
-
-            bloch_coordinates:
-                data.bloch_coordinates,
-
-            success: true
-
-        });
-
+        updateSingleQubitDisplay(data);
 
     }
-
     catch (error) {
 
         console.error(error);
@@ -117,691 +243,14 @@ async function applyGate(gate) {
         );
 
     }
-
 }
 
 
 /* =====================================================
-   UPDATE QUBIT DISPLAY
+   RESET SINGLE QUBIT
 ===================================================== */
 
-function updateQubitDisplay(data) {
-
-    const state =
-        data.after_state ||
-        data.state;
-
-
-    const stateDisplay =
-        document.getElementById(
-            "stateDisplay"
-        );
-
-
-    if (stateDisplay && state) {
-
-        stateDisplay.textContent =
-            formatQuantumState(state);
-
-    }
-
-
-    if (data.probabilities) {
-
-        updateProbabilities(
-            data.probabilities[0] * 100,
-            data.probabilities[1] * 100
-        );
-
-    }
-
-
-    if (data.bloch_coordinates) {
-
-        updateCoordinates(
-            data.bloch_coordinates
-        );
-
-        updateBlochPoint(
-            data.bloch_coordinates
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   FORMAT QUANTUM STATE
-===================================================== */
-
-function formatQuantumState(state) {
-
-    if (!state) {
-        return "|0⟩";
-    }
-
-
-    const terms = [];
-
-
-    for (const basis in state) {
-
-        const item =
-            state[basis];
-
-
-        const real =
-            item.real;
-
-
-        const imaginary =
-            item.imaginary;
-
-
-        if (
-            Math.abs(real) < 0.0001 &&
-            Math.abs(imaginary) < 0.0001
-        ) {
-
-            continue;
-
-        }
-
-
-        const magnitude =
-            Math.sqrt(
-                real * real +
-                imaginary * imaginary
-            );
-
-
-        if (
-            Math.abs(real - 1) < 0.0001 &&
-            Math.abs(imaginary) < 0.0001
-        ) {
-
-            terms.push(
-                `|${basis}⟩`
-            );
-
-        }
-
-        else if (
-            Math.abs(real + 1) < 0.0001 &&
-            Math.abs(imaginary) < 0.0001
-        ) {
-
-            terms.push(
-                `-|${basis}⟩`
-            );
-
-        }
-
-        else {
-
-            terms.push(
-                `${magnitude.toFixed(3)}|${basis}⟩`
-            );
-
-        }
-
-    }
-
-
-    return terms.join(" + ")
-        || "|0⟩";
-
-}
-
-
-/* =====================================================
-   PROBABILITIES
-===================================================== */
-
-function updateProbabilities(
-    probability0,
-    probability1
-) {
-
-    const prob0 =
-        document.getElementById(
-            "prob0"
-        );
-
-    const prob1 =
-        document.getElementById(
-            "prob1"
-        );
-
-    const bar0 =
-        document.getElementById(
-            "bar0"
-        );
-
-    const bar1 =
-        document.getElementById(
-            "bar1"
-        );
-
-
-    if (prob0) {
-
-        prob0.textContent =
-            `${probability0.toFixed(1)}%`;
-
-    }
-
-
-    if (prob1) {
-
-        prob1.textContent =
-            `${probability1.toFixed(1)}%`;
-
-    }
-
-
-    if (bar0) {
-
-        bar0.style.width =
-            `${probability0}%`;
-
-    }
-
-
-    if (bar1) {
-
-        bar1.style.width =
-            `${probability1}%`;
-
-    }
-
-}
-
-
-/* =====================================================
-   BLOCH COORDINATES
-===================================================== */
-
-function updateCoordinates(coords) {
-
-    const x =
-        document.getElementById(
-            "coordX"
-        );
-
-    const y =
-        document.getElementById(
-            "coordY"
-        );
-
-    const z =
-        document.getElementById(
-            "coordZ"
-        );
-
-
-    if (x) {
-
-        x.textContent =
-            coords.x.toFixed(2);
-
-    }
-
-
-    if (y) {
-
-        y.textContent =
-            coords.y.toFixed(2);
-
-    }
-
-
-    if (z) {
-
-        z.textContent =
-            coords.z.toFixed(2);
-
-    }
-
-}
-
-
-/* =====================================================
-   3D BLOCH SPHERE
-===================================================== */
-
-let blochInitialized = false;
-
-
-function initializeBlochSphere() {
-
-    const container =
-        document.getElementById(
-            "blochSphere"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    if (
-        typeof Plotly ===
-        "undefined"
-    ) {
-
-        console.error(
-            "Plotly could not be loaded."
-        );
-
-        return;
-
-    }
-
-
-    /*
-    Create sphere coordinates.
-    */
-
-    const u = [];
-
-    const v = [];
-
-    const sphereX = [];
-
-    const sphereY = [];
-
-    const sphereZ = [];
-
-
-    const segments = 30;
-
-
-    for (
-        let i = 0;
-        i <= segments;
-        i++
-    ) {
-
-        const phi =
-            Math.PI * i / segments;
-
-
-        const rowX = [];
-
-        const rowY = [];
-
-        const rowZ = [];
-
-
-        for (
-            let j = 0;
-            j <= segments;
-            j++
-        ) {
-
-            const theta =
-                2 * Math.PI *
-                j / segments;
-
-
-            rowX.push(
-                Math.sin(phi) *
-                Math.cos(theta)
-            );
-
-
-            rowY.push(
-                Math.sin(phi) *
-                Math.sin(theta)
-            );
-
-
-            rowZ.push(
-                Math.cos(phi)
-            );
-
-        }
-
-
-        sphereX.push(rowX);
-
-        sphereY.push(rowY);
-
-        sphereZ.push(rowZ);
-
-    }
-
-
-    const sphere = {
-
-        type: "surface",
-
-        x: sphereX,
-
-        y: sphereY,
-
-        z: sphereZ,
-
-        opacity: 0.18,
-
-        showscale: false,
-
-        hoverinfo: "skip"
-
-    };
-
-
-    /*
-    Equator
-    */
-
-    const equatorX = [];
-
-    const equatorY = [];
-
-    const equatorZ = [];
-
-
-    for (
-        let i = 0;
-        i <= 100;
-        i++
-    ) {
-
-        const angle =
-            2 * Math.PI *
-            i / 100;
-
-
-        equatorX.push(
-            Math.cos(angle)
-        );
-
-        equatorY.push(
-            Math.sin(angle)
-        );
-
-        equatorZ.push(0);
-
-    }
-
-
-    const equator = {
-
-        type: "scatter3d",
-
-        mode: "lines",
-
-        x: equatorX,
-
-        y: equatorY,
-
-        z: equatorZ,
-
-        line: {
-            width: 2
-        },
-
-        hoverinfo: "skip"
-
-    };
-
-
-    /*
-    X axis
-    */
-
-    const xAxis = {
-
-        type: "scatter3d",
-
-        mode: "lines",
-
-        x: [-1, 1],
-
-        y: [0, 0],
-
-        z: [0, 0],
-
-        line: {
-            width: 2
-        },
-
-        hoverinfo: "skip"
-
-    };
-
-
-    /*
-    Y axis
-    */
-
-    const yAxis = {
-
-        type: "scatter3d",
-
-        mode: "lines",
-
-        x: [0, 0],
-
-        y: [-1, 1],
-
-        z: [0, 0],
-
-        line: {
-            width: 2
-        },
-
-        hoverinfo: "skip"
-
-    };
-
-
-    /*
-    Z axis
-    */
-
-    const zAxis = {
-
-        type: "scatter3d",
-
-        mode: "lines",
-
-        x: [0, 0],
-
-        y: [0, 0],
-
-        z: [-1, 1],
-
-        line: {
-            width: 3
-        },
-
-        hoverinfo: "skip"
-
-    };
-
-
-    /*
-    Qubit state vector.
-    */
-
-    const stateVector = {
-
-        type: "scatter3d",
-
-        mode: "lines+markers",
-
-        x: [0, 0],
-
-        y: [0, 0],
-
-        z: [0, 1],
-
-        line: {
-            width: 6
-        },
-
-        marker: {
-            size: 8
-        },
-
-        name: "Qubit State"
-
-    };
-
-
-    const layout = {
-
-        margin: {
-            l: 0,
-            r: 0,
-            b: 0,
-            t: 0
-        },
-
-        paper_bgcolor:
-            "rgba(0,0,0,0)",
-
-        plot_bgcolor:
-            "rgba(0,0,0,0)",
-
-        showlegend: false,
-
-        scene: {
-
-            xaxis: {
-                range: [-1.2, 1.2],
-                visible: false
-            },
-
-            yaxis: {
-                range: [-1.2, 1.2],
-                visible: false
-            },
-
-            zaxis: {
-                range: [-1.2, 1.2],
-                visible: false
-            },
-
-            aspectmode: "cube",
-
-            camera: {
-
-                eye: {
-                    x: 1.5,
-                    y: 1.5,
-                    z: 1.2
-                }
-
-            }
-
-        }
-
-    };
-
-
-    Plotly.newPlot(
-
-        "blochSphere",
-
-        [
-            sphere,
-            equator,
-            xAxis,
-            yAxis,
-            zAxis,
-            stateVector
-        ],
-
-        layout,
-
-        {
-            responsive: true,
-            displayModeBar: false
-        }
-
-    );
-
-
-    blochInitialized = true;
-
-}
-
-
-/* =====================================================
-   UPDATE BLOCH POINT
-===================================================== */
-
-function updateBlochPoint(coords) {
-
-    if (!blochInitialized) {
-
-        initializeBlochSphere();
-
-    }
-
-
-    const container =
-        document.getElementById(
-            "blochSphere"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    if (
-        typeof Plotly ===
-        "undefined"
-    ) {
-
-        return;
-
-    }
-
-
-    Plotly.restyle(
-
-        "blochSphere",
-
-        {
-
-            x: [[
-                0,
-                coords.x
-            ]],
-
-            y: [[
-                0,
-                coords.y
-            ]],
-
-            z: [[
-                0,
-                coords.z
-            ]]
-
-        },
-
-        [5]
-
-    );
-
-}
-
-
-/* =====================================================
-   RESET
-===================================================== */
-
-async function resetQubit() {
+async function resetState() {
 
     try {
 
@@ -813,27 +262,268 @@ async function resetQubit() {
                 }
             );
 
-
         const data =
             await response.json();
 
 
         if (!data.success) {
 
-            return;
+            alert(
+                "Reset Error: " +
+                data.error
+            );
 
+            return;
         }
 
 
-        updateQubitDisplay(data);
+        currentState = data.state;
+
+        updateSingleQubitDisplay(data);
 
     }
-
     catch (error) {
 
         console.error(error);
 
     }
+}
+
+
+/* =====================================================
+   BLOCH SPHERE
+===================================================== */
+
+function updateBlochSphere(data) {
+
+    const sphere =
+        document.getElementById(
+            "blochSphere"
+        );
+
+    if (!sphere || !window.Plotly) {
+        return;
+    }
+
+
+    let state = data.state;
+
+    if (!state || state.length < 2) {
+        return;
+    }
+
+
+    function getComplex(value) {
+
+        if (typeof value === "object") {
+
+            return {
+                re: value.real ?? value.re ?? 0,
+                im: value.imag ?? value.im ?? 0
+            };
+
+        }
+
+        return {
+            re: value,
+            im: 0
+        };
+    }
+
+
+    const alpha =
+        getComplex(state[0]);
+
+    const beta =
+        getComplex(state[1]);
+
+
+    /*
+       Bloch coordinates
+
+       x = 2 Re(alpha* beta)
+       y = 2 Im(alpha* beta)
+       z = |alpha|² - |beta|²
+    */
+
+    const conjugateAlphaBeta = {
+
+        re:
+            alpha.re * beta.re +
+            alpha.im * beta.im,
+
+        im:
+            alpha.re * beta.im -
+            alpha.im * beta.re
+    };
+
+
+    const x =
+        2 * conjugateAlphaBeta.re;
+
+    const y =
+        2 * conjugateAlphaBeta.im;
+
+    const z =
+        alpha.re * alpha.re +
+        alpha.im * alpha.im -
+        beta.re * beta.re -
+        beta.im * beta.im;
+
+
+    const theta =
+        Array.from(
+            { length: 50 },
+            (_, i) =>
+                Math.PI * i / 49
+        );
+
+    const phi =
+        Array.from(
+            { length: 50 },
+            (_, i) =>
+                2 * Math.PI * i / 49
+        );
+
+
+    const sphereX = [];
+    const sphereY = [];
+    const sphereZ = [];
+
+
+    theta.forEach(t => {
+
+        const rowX = [];
+        const rowY = [];
+        const rowZ = [];
+
+
+        phi.forEach(p => {
+
+            rowX.push(
+                Math.sin(t) * Math.cos(p)
+            );
+
+            rowY.push(
+                Math.sin(t) * Math.sin(p)
+            );
+
+            rowZ.push(
+                Math.cos(t)
+            );
+
+        });
+
+
+        sphereX.push(rowX);
+        sphereY.push(rowY);
+        sphereZ.push(rowZ);
+
+    });
+
+
+    const surface = {
+
+        x: sphereX,
+        y: sphereY,
+        z: sphereZ,
+
+        type: "surface",
+
+        opacity: 0.15,
+
+        showscale: false,
+
+        hoverinfo: "skip"
+    };
+
+
+    const point = {
+
+        x: [x],
+        y: [y],
+        z: [z],
+
+        type: "scatter3d",
+
+        mode: "markers",
+
+        marker: {
+
+            size: 7
+
+        },
+
+        name: "Quantum State"
+    };
+
+
+    const vector = {
+
+        x: [0, x],
+        y: [0, y],
+        z: [0, z],
+
+        type: "scatter3d",
+
+        mode: "lines",
+
+        line: {
+
+            width: 6
+
+        },
+
+        name: "State Vector"
+    };
+
+
+    Plotly.react(
+        sphere,
+        [surface, vector, point],
+        {
+
+            margin: {
+                l: 0,
+                r: 0,
+                t: 0,
+                b: 0
+            },
+
+            paper_bgcolor:
+                "rgba(0,0,0,0)",
+
+            plot_bgcolor:
+                "rgba(0,0,0,0)",
+
+            scene: {
+
+                xaxis: {
+                    title: "X",
+                    range: [-1.2, 1.2]
+                },
+
+                yaxis: {
+                    title: "Y",
+                    range: [-1.2, 1.2]
+                },
+
+                zaxis: {
+                    title: "Z",
+                    range: [-1.2, 1.2]
+                },
+
+                aspectmode: "cube"
+            },
+
+            showlegend: false
+
+        },
+
+        {
+            responsive: true
+        }
+    );
 
 }
 
@@ -842,7 +532,14 @@ async function resetQubit() {
    CIRCUIT LAB
 ===================================================== */
 
-function addCircuitGate(gate) {
+let circuit = [];
+
+
+/* -----------------------------------------------------
+   ADD GATE
+----------------------------------------------------- */
+
+function addGate(gate) {
 
     circuit.push(gate);
 
@@ -851,6 +548,23 @@ function addCircuitGate(gate) {
 }
 
 
+/* -----------------------------------------------------
+   REMOVE GATE
+----------------------------------------------------- */
+
+function removeGate(index) {
+
+    circuit.splice(index, 1);
+
+    renderCircuit();
+
+}
+
+
+/* -----------------------------------------------------
+   RENDER CIRCUIT
+----------------------------------------------------- */
+
 function renderCircuit() {
 
     const container =
@@ -858,86 +572,57 @@ function renderCircuit() {
             "circuitGates"
         );
 
-
     if (!container) {
         return;
-    }
-
-
-    if (circuit.length === 0) {
-
-        container.innerHTML = `
-            <span class="empty-circuit">
-                Add quantum gates above
-            </span>
-        `;
-
-        return;
-
     }
 
 
     container.innerHTML = "";
 
 
+    if (circuit.length === 0) {
+
+        container.innerHTML = `
+            <div class="empty-circuit">
+                Add gates from the library.
+            </div>
+        `;
+
+        return;
+    }
+
+
     circuit.forEach(
         (gate, index) => {
 
-            const element =
+            const gateElement =
                 document.createElement(
                     "div"
                 );
 
 
-            element.className =
+            gateElement.className =
                 "circuit-gate";
 
 
-            element.textContent =
-                gate;
+            gateElement.innerHTML = `
 
+                <span>
+                    ${gate}
+                </span>
 
-            element.title =
-                "Click × to remove this gate";
+                <button
+                    class="gate-remove"
+                    onclick="removeGate(${index})"
+                >
+                    ×
+                </button>
 
-
-            /*
-            Remove button
-            */
-
-            const remove =
-                document.createElement(
-                    "button"
-                );
-
-
-            remove.className =
-                "gate-remove";
-
-
-            remove.textContent =
-                "×";
-
-
-            remove.onclick =
-                function(event) {
-
-                    event.stopPropagation();
-
-                    removeCircuitGate(
-                        index
-                    );
-
-                };
-
-
-            element.appendChild(
-                remove
-            );
+            `;
 
 
             container.appendChild(
-                element
+                gateElement
             );
 
         }
@@ -946,34 +631,21 @@ function renderCircuit() {
 }
 
 
-function removeCircuitGate(index) {
+/* -----------------------------------------------------
+   RESET CIRCUIT
+----------------------------------------------------- */
 
-    circuit.splice(
-        index,
-        1
-    );
-
-    renderCircuit();
-
-}
-
-
-function clearCircuit() {
+function resetCircuit() {
 
     circuit = [];
 
     renderCircuit();
 
 
-    /*
-    Reset output
-    */
-
     const output =
         document.getElementById(
             "circuitOutput"
         );
-
 
     if (output) {
 
@@ -982,10 +654,6 @@ function clearCircuit() {
 
     }
 
-
-    /*
-    Reset probabilities
-    */
 
     const p0 =
         document.getElementById(
@@ -998,19 +666,21 @@ function clearCircuit() {
         );
 
 
-    if (p0)
+    if (p0) {
+
         p0.textContent =
             "100%";
 
+    }
 
-    if (p1)
+
+    if (p1) {
+
         p1.textContent =
             "0%";
 
+    }
 
-    /*
-    Reset bars
-    */
 
     const bar0 =
         document.getElementById(
@@ -1023,19 +693,21 @@ function clearCircuit() {
         );
 
 
-    if (bar0)
+    if (bar0) {
+
         bar0.style.width =
             "100%";
 
+    }
 
-    if (bar1)
+
+    if (bar1) {
+
         bar1.style.width =
             "0%";
 
+    }
 
-    /*
-    Reset execution steps
-    */
 
     const steps =
         document.getElementById(
@@ -1048,10 +720,8 @@ function clearCircuit() {
         steps.innerHTML = `
 
             <div class="empty-steps">
-
                 Run your circuit to see
                 each quantum operation.
-
             </div>
 
         `;
@@ -1060,6 +730,10 @@ function clearCircuit() {
 
 }
 
+
+/* -----------------------------------------------------
+   RUN CIRCUIT
+----------------------------------------------------- */
 
 async function runCircuit() {
 
@@ -1070,7 +744,6 @@ async function runCircuit() {
         );
 
         return;
-
     }
 
 
@@ -1084,18 +757,13 @@ async function runCircuit() {
                     method: "POST",
 
                     headers: {
-
                         "Content-Type":
                             "application/json"
-
                     },
 
                     body:
                         JSON.stringify({
-
-                            gates:
-                                circuit
-
+                            gates: circuit
                         })
 
                 }
@@ -1114,13 +782,8 @@ async function runCircuit() {
             );
 
             return;
-
         }
 
-
-        /*
-        FINAL STATE
-        */
 
         const output =
             document.getElementById(
@@ -1138,13 +801,8 @@ async function runCircuit() {
         }
 
 
-        /*
-        PROBABILITIES
-        */
-
         const probability0 =
             data.probabilities[0] * 100;
-
 
         const probability1 =
             data.probabilities[1] * 100;
@@ -1177,10 +835,6 @@ async function runCircuit() {
         }
 
 
-        /*
-        PROBABILITY BARS
-        */
-
         const bar0 =
             document.getElementById(
                 "circuitBar0"
@@ -1208,17 +862,11 @@ async function runCircuit() {
         }
 
 
-        /*
-        EXECUTION STEPS
-        */
-
         displayCircuitSteps(
             data.steps
         );
 
-
     }
-
     catch (error) {
 
         console.error(error);
@@ -1249,21 +897,20 @@ function displayCircuitSteps(steps) {
     }
 
 
-    if (!steps ||
-        steps.length === 0) {
+    if (
+        !steps ||
+        steps.length === 0
+    ) {
 
         container.innerHTML = `
 
             <div class="empty-steps">
-
                 No execution steps available.
-
             </div>
 
         `;
 
         return;
-
     }
 
 
@@ -1272,7 +919,6 @@ function displayCircuitSteps(steps) {
 
     steps.forEach(
         (step, index) => {
-
 
             const row =
                 document.createElement(
@@ -1283,10 +929,6 @@ function displayCircuitSteps(steps) {
             row.className =
                 "execution-step";
 
-
-            /*
-            Step number
-            */
 
             const number =
                 document.createElement(
@@ -1302,10 +944,6 @@ function displayCircuitSteps(steps) {
                 `STEP ${index + 1}`;
 
 
-            /*
-            Gate
-            */
-
             const gate =
                 document.createElement(
                     "div"
@@ -1319,10 +957,6 @@ function displayCircuitSteps(steps) {
             gate.textContent =
                 step.gate;
 
-
-            /*
-            State
-            */
 
             const state =
                 document.createElement(
@@ -1340,29 +974,21 @@ function displayCircuitSteps(steps) {
                 );
 
 
-            row.appendChild(
-                number
-            );
+            row.appendChild(number);
+
+            row.appendChild(gate);
+
+            row.appendChild(state);
 
 
-            row.appendChild(
-                gate
-            );
-
-
-            row.appendChild(
-                state
-            );
-
-
-            container.appendChild(
-                row
-            );
+            container.appendChild(row);
 
         }
     );
 
 }
+
+
 /* =====================================================
    MEASUREMENT LAB
 ===================================================== */
@@ -1396,7 +1022,6 @@ async function runMeasurement() {
         );
 
         return;
-
     }
 
 
@@ -1414,9 +1039,10 @@ async function runMeasurement() {
                             "application/json"
                     },
 
-                    body: JSON.stringify({
-                        shots: shots
-                    })
+                    body:
+                        JSON.stringify({
+                            shots: shots
+                        })
 
                 }
             );
@@ -1434,7 +1060,6 @@ async function runMeasurement() {
             );
 
             return;
-
         }
 
 
@@ -1451,7 +1076,6 @@ async function runMeasurement() {
         );
 
     }
-
     catch (error) {
 
         console.error(error);
@@ -1460,6 +1084,10 @@ async function runMeasurement() {
 
 }
 
+
+/* -----------------------------------------------------
+   DISPLAY MEASUREMENT
+----------------------------------------------------- */
 
 function displayMeasurement(
     count0,
@@ -1476,6 +1104,7 @@ function displayMeasurement(
             "measurement1"
         );
 
+
     const value0 =
         document.getElementById(
             "histValue0"
@@ -1485,6 +1114,7 @@ function displayMeasurement(
         document.getElementById(
             "histValue1"
         );
+
 
     const bar0 =
         document.getElementById(
@@ -1551,7 +1181,7 @@ function displayMeasurement(
 
 
 /* =====================================================
-   ENTANGLEMENT
+   ENTANGLEMENT LAB
 ===================================================== */
 
 async function createBellState() {
@@ -1560,6 +1190,7 @@ async function createBellState() {
         document.getElementById(
             "entanglementStatus"
         );
+
 
     try {
 
@@ -1570,6 +1201,7 @@ async function createBellState() {
                     method: "POST"
                 }
             );
+
 
         const data =
             await response.json();
@@ -1583,7 +1215,6 @@ async function createBellState() {
             );
 
             return;
-
         }
 
 
@@ -1635,7 +1266,6 @@ async function createBellState() {
         }
 
     }
-
     catch (error) {
 
         console.error(error);
@@ -1647,3 +1277,1477 @@ async function createBellState() {
     }
 
 }
+
+
+/* =====================================================
+   TWO-QUBIT EXPLORER
+===================================================== */
+
+
+/*
+    Two-qubit state order:
+
+    |00⟩
+    |01⟩
+    |10⟩
+    |11⟩
+*/
+
+
+let twoQState = [
+
+    { re: 1, im: 0 },
+
+    { re: 0, im: 0 },
+
+    { re: 0, im: 0 },
+
+    { re: 0, im: 0 }
+
+];
+
+
+const twoQBases = [
+    "00",
+    "01",
+    "10",
+    "11"
+];
+
+
+/* =====================================================
+   EXPLORER SWITCH
+===================================================== */
+
+function showExplorer(mode) {
+
+    const single =
+        document.getElementById(
+            "singleExplorer"
+        );
+
+    const double =
+        document.getElementById(
+            "doubleExplorer"
+        );
+
+
+    const singleTab =
+        document.getElementById(
+            "singleExplorerTab"
+        );
+
+    const doubleTab =
+        document.getElementById(
+            "doubleExplorerTab"
+        );
+
+
+    if (!single || !double) {
+        return;
+    }
+
+
+    if (mode === "double") {
+
+        single.classList.remove(
+            "active-view"
+        );
+
+        double.classList.add(
+            "active-view"
+        );
+
+
+        if (singleTab) {
+
+            singleTab.classList.remove(
+                "active"
+            );
+
+        }
+
+
+        if (doubleTab) {
+
+            doubleTab.classList.add(
+                "active"
+            );
+
+        }
+
+
+        updateTwoQDisplay();
+
+    }
+    else {
+
+        double.classList.remove(
+            "active-view"
+        );
+
+        single.classList.add(
+            "active-view"
+        );
+
+
+        if (doubleTab) {
+
+            doubleTab.classList.remove(
+                "active"
+            );
+
+        }
+
+
+        if (singleTab) {
+
+            singleTab.classList.add(
+                "active"
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   COMPLEX NUMBER HELPERS
+===================================================== */
+
+function complex(
+    re = 0,
+    im = 0
+) {
+
+    return {
+        re: re,
+        im: im
+    };
+
+}
+
+
+function complexAdd(a, b) {
+
+    return {
+
+        re:
+            a.re + b.re,
+
+        im:
+            a.im + b.im
+
+    };
+
+}
+
+
+function complexMultiplyReal(
+    a,
+    value
+) {
+
+    return {
+
+        re:
+            a.re * value,
+
+        im:
+            a.im * value
+
+    };
+
+}
+
+
+function complexAbsSquared(a) {
+
+    return (
+        a.re * a.re +
+        a.im * a.im
+    );
+
+}
+
+
+/* =====================================================
+   NORMALIZE TWO-QUBIT STATE
+===================================================== */
+
+function normalizeTwoQState(
+    state
+) {
+
+    const norm =
+        Math.sqrt(
+            state.reduce(
+                (
+                    sum,
+                    amplitude
+                ) =>
+                    sum +
+                    complexAbsSquared(
+                        amplitude
+                    ),
+                0
+            )
+        );
+
+
+    if (norm === 0) {
+
+        return [
+
+            complex(1),
+
+            complex(0),
+
+            complex(0),
+
+            complex(0)
+
+        ];
+
+    }
+
+
+    return state.map(
+        amplitude =>
+            complex(
+                amplitude.re / norm,
+                amplitude.im / norm
+            )
+    );
+
+}
+
+
+/* =====================================================
+   NUMBER FORMATTING
+===================================================== */
+
+function cleanNumber(value) {
+
+    if (Math.abs(value) < 0.0005) {
+        return 0;
+    }
+
+    return Number(
+        value.toFixed(3)
+    );
+
+}
+
+
+/* =====================================================
+   AMPLITUDE FORMATTING
+===================================================== */
+
+function formatAmplitude(
+    amplitude
+) {
+
+    const re =
+        cleanNumber(
+            amplitude.re
+        );
+
+    const im =
+        cleanNumber(
+            amplitude.im
+        );
+
+
+    if (
+        re === 0 &&
+        im === 0
+    ) {
+
+        return "0";
+
+    }
+
+
+    if (im === 0) {
+
+        return String(re);
+
+    }
+
+
+    if (re === 0) {
+
+        if (im === 1)
+            return "i";
+
+        if (im === -1)
+            return "-i";
+
+        return `${im}i`;
+
+    }
+
+
+    const sign =
+        im >= 0
+            ? "+"
+            : "-";
+
+
+    const imaginary =
+        Math.abs(im) === 1
+            ? "i"
+            : `${Math.abs(im)}i`;
+
+
+    return `${re}${sign}${imaginary}`;
+
+}
+
+
+/* =====================================================
+   TWO-QUBIT STATE EQUATION
+===================================================== */
+
+function formatTwoQState() {
+
+    const terms = [];
+
+
+    twoQState.forEach(
+        (amplitude, index) => {
+
+            const magnitude =
+                Math.sqrt(
+                    complexAbsSquared(
+                        amplitude
+                    )
+                );
+
+
+            if (
+                magnitude < 0.0005
+            ) {
+                return;
+            }
+
+
+            const basis =
+                twoQBases[index];
+
+
+            const re =
+                cleanNumber(
+                    amplitude.re
+                );
+
+            const im =
+                cleanNumber(
+                    amplitude.im
+                );
+
+
+            if (
+                re === 1 &&
+                im === 0
+            ) {
+
+                terms.push(
+                    `|${basis}⟩`
+                );
+
+            }
+
+            else if (
+                re === -1 &&
+                im === 0
+            ) {
+
+                terms.push(
+                    `-|${basis}⟩`
+                );
+
+            }
+
+            else {
+
+                terms.push(
+                    `${formatAmplitude(
+                        amplitude
+                    )}|${basis}⟩`
+                );
+
+            }
+
+        }
+    );
+
+
+    return (
+        terms.join(" + ") ||
+        "0"
+    );
+
+}
+
+
+/* =====================================================
+   SET TWO-QUBIT BASIS STATE
+===================================================== */
+
+function setTwoQBasisState(
+    q1,
+    q2
+) {
+
+    const index =
+        q1 * 2 + q2;
+
+
+    twoQState = [
+
+        complex(
+            index === 0 ? 1 : 0
+        ),
+
+        complex(
+            index === 1 ? 1 : 0
+        ),
+
+        complex(
+            index === 2 ? 1 : 0
+        ),
+
+        complex(
+            index === 3 ? 1 : 0
+        )
+
+    ];
+
+
+    updateTwoQDisplay();
+
+}
+
+
+/* =====================================================
+   SELECT QUBIT BASIS
+===================================================== */
+
+function setTwoQubitBasis(
+    qubit,
+    value
+) {
+
+    let currentQ1 = 0;
+    let currentQ2 = 0;
+
+
+    const activeQ1 =
+        document.querySelector(
+            '.basis-btn[data-q="1"].active'
+        );
+
+
+    const activeQ2 =
+        document.querySelector(
+            '.basis-btn[data-q="2"].active'
+        );
+
+
+    if (activeQ1) {
+
+        currentQ1 =
+            Number(
+                activeQ1.dataset.value
+            );
+
+    }
+
+
+    if (activeQ2) {
+
+        currentQ2 =
+            Number(
+                activeQ2.dataset.value
+            );
+
+    }
+
+
+    if (qubit === 1) {
+
+        currentQ1 = value;
+
+    }
+
+
+    if (qubit === 2) {
+
+        currentQ2 = value;
+
+    }
+
+
+    document
+        .querySelectorAll(
+            `.basis-btn[data-q="${qubit}"]`
+        )
+        .forEach(
+            button =>
+                button.classList.remove(
+                    "active"
+                )
+        );
+
+
+    const selected =
+        document.querySelector(
+            `.basis-btn[data-q="${qubit}"][data-value="${value}"]`
+        );
+
+
+    if (selected) {
+
+        selected.classList.add(
+            "active"
+        );
+
+    }
+
+
+    setTwoQBasisState(
+        currentQ1,
+        currentQ2
+    );
+
+
+    updateTwoQStatus(
+        `Basis state selected: |${currentQ1}${currentQ2}⟩`
+    );
+
+}
+
+
+/* =====================================================
+   HADAMARD
+===================================================== */
+
+function applyHToQubit(
+    state,
+    qubit
+) {
+
+    const result =
+        state.map(
+            () => complex(0)
+        );
+
+
+    const inverseSqrt2 =
+        1 / Math.sqrt(2);
+
+
+    if (qubit === 1) {
+
+        result[0] =
+            complexMultiplyReal(
+                complexAdd(
+                    state[0],
+                    state[2]
+                ),
+                inverseSqrt2
+            );
+
+
+        result[2] =
+            complexMultiplyReal(
+                complexAdd(
+                    state[0],
+                    complexMultiplyReal(
+                        state[2],
+                        -1
+                    )
+                ),
+                inverseSqrt2
+            );
+
+
+        result[1] =
+            complexMultiplyReal(
+                complexAdd(
+                    state[1],
+                    state[3]
+                ),
+                inverseSqrt2
+            );
+
+
+        result[3] =
+            complexMultiplyReal(
+                complexAdd(
+                    state[1],
+                    complexMultiplyReal(
+                        state[3],
+                        -1
+                    )
+                ),
+                inverseSqrt2
+            );
+
+    }
+
+    else {
+
+        result[0] =
+            complexMultiplyReal(
+                complexAdd(
+                    state[0],
+                    state[1]
+                ),
+                inverseSqrt2
+            );
+
+
+        result[1] =
+            complexMultiplyReal(
+                complexAdd(
+                    state[0],
+                    complexMultiplyReal(
+                        state[1],
+                        -1
+                    )
+                ),
+                inverseSqrt2
+            );
+
+
+        result[2] =
+            complexMultiplyReal(
+                complexAdd(
+                    state[2],
+                    state[3]
+                ),
+                inverseSqrt2
+            );
+
+
+        result[3] =
+            complexMultiplyReal(
+                complexAdd(
+                    state[2],
+                    complexMultiplyReal(
+                        state[3],
+                        -1
+                    )
+                ),
+                inverseSqrt2
+            );
+
+    }
+
+
+    return result;
+
+}
+
+
+/* =====================================================
+   PAULI-X
+===================================================== */
+
+function applyXToQubit(
+    state,
+    qubit
+) {
+
+    const result =
+        state.map(
+            amplitude =>
+                complex(
+                    amplitude.re,
+                    amplitude.im
+                )
+        );
+
+
+    if (qubit === 1) {
+
+        result[0] = state[2];
+        result[2] = state[0];
+
+        result[1] = state[3];
+        result[3] = state[1];
+
+    }
+
+    else {
+
+        result[0] = state[1];
+        result[1] = state[0];
+
+        result[2] = state[3];
+        result[3] = state[2];
+
+    }
+
+
+    return result;
+
+}
+
+
+/* =====================================================
+   PAULI-Z
+===================================================== */
+
+function applyZToQubit(
+    state,
+    qubit
+) {
+
+    return state.map(
+        (amplitude, index) => {
+
+            const q1 =
+                Math.floor(
+                    index / 2
+                );
+
+            const q2 =
+                index % 2;
+
+
+            const bit =
+                qubit === 1
+                    ? q1
+                    : q2;
+
+
+            if (bit === 1) {
+
+                return complexMultiplyReal(
+                    amplitude,
+                    -1
+                );
+
+            }
+
+
+            return complex(
+                amplitude.re,
+                amplitude.im
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   CNOT
+===================================================== */
+
+function applyCNOT(
+    state
+) {
+
+    const result =
+        state.map(
+            amplitude =>
+                complex(
+                    amplitude.re,
+                    amplitude.im
+                )
+        );
+
+
+    /*
+        q1 = control
+        q2 = target
+
+        |10⟩ ↔ |11⟩
+    */
+
+    result[2] = state[3];
+
+    result[3] = state[2];
+
+
+    return result;
+
+}
+
+
+/* =====================================================
+   CONTROLLED-Z
+===================================================== */
+
+function applyCZ(
+    state
+) {
+
+    const result =
+        state.map(
+            amplitude =>
+                complex(
+                    amplitude.re,
+                    amplitude.im
+                )
+        );
+
+
+    /*
+        Only |11⟩ receives
+        a phase flip.
+    */
+
+    result[3] =
+        complexMultiplyReal(
+            state[3],
+            -1
+        );
+
+
+    return result;
+
+}
+
+
+/* =====================================================
+   SWAP
+===================================================== */
+
+function applySWAP(
+    state
+) {
+
+    const result =
+        state.map(
+            amplitude =>
+                complex(
+                    amplitude.re,
+                    amplitude.im
+                )
+        );
+
+
+    /*
+        |01⟩ ↔ |10⟩
+    */
+
+    result[1] = state[2];
+
+    result[2] = state[1];
+
+
+    return result;
+
+}
+
+
+/* =====================================================
+   EXECUTE TWO-QUBIT GATE
+===================================================== */
+
+function twoQGate(
+    gate
+) {
+
+    switch (gate) {
+
+        case "H1":
+
+            twoQState =
+                applyHToQubit(
+                    twoQState,
+                    1
+                );
+
+            updateTwoQStatus(
+                "Applied Hadamard gate to qubit 1."
+            );
+
+            break;
+
+
+        case "H2":
+
+            twoQState =
+                applyHToQubit(
+                    twoQState,
+                    2
+                );
+
+            updateTwoQStatus(
+                "Applied Hadamard gate to qubit 2."
+            );
+
+            break;
+
+
+        case "X1":
+
+            twoQState =
+                applyXToQubit(
+                    twoQState,
+                    1
+                );
+
+            updateTwoQStatus(
+                "Applied Pauli-X to qubit 1."
+            );
+
+            break;
+
+
+        case "X2":
+
+            twoQState =
+                applyXToQubit(
+                    twoQState,
+                    2
+                );
+
+            updateTwoQStatus(
+                "Applied Pauli-X to qubit 2."
+            );
+
+            break;
+
+
+        case "Z1":
+
+            twoQState =
+                applyZToQubit(
+                    twoQState,
+                    1
+                );
+
+            updateTwoQStatus(
+                "Applied Pauli-Z to qubit 1."
+            );
+
+            break;
+
+
+        case "Z2":
+
+            twoQState =
+                applyZToQubit(
+                    twoQState,
+                    2
+                );
+
+            updateTwoQStatus(
+                "Applied Pauli-Z to qubit 2."
+            );
+
+            break;
+
+
+        case "CNOT":
+
+            twoQState =
+                applyCNOT(
+                    twoQState
+                );
+
+            updateTwoQStatus(
+                "CNOT applied: qubit 1 controls qubit 2."
+            );
+
+            break;
+
+
+        case "CZ":
+
+            twoQState =
+                applyCZ(
+                    twoQState
+                );
+
+            updateTwoQStatus(
+                "Controlled-Z applied: |11⟩ receives a phase flip."
+            );
+
+            break;
+
+
+        case "SWAP":
+
+            twoQState =
+                applySWAP(
+                    twoQState
+                );
+
+            updateTwoQStatus(
+                "SWAP exchanged the two qubit states."
+            );
+
+            break;
+
+    }
+
+
+    twoQState =
+        normalizeTwoQState(
+            twoQState
+        );
+
+
+    updateTwoQDisplay();
+
+}
+
+
+/* =====================================================
+   CREATE BELL STATE
+===================================================== */
+
+function createTwoQBellState() {
+
+    const value =
+        1 / Math.sqrt(2);
+
+
+    twoQState = [
+
+        complex(value),
+
+        complex(0),
+
+        complex(0),
+
+        complex(value)
+
+    ];
+
+
+    document
+        .querySelectorAll(
+            ".basis-btn"
+        )
+        .forEach(
+            button =>
+                button.classList.remove(
+                    "active"
+                )
+        );
+
+
+    updateTwoQStatus(
+        "Bell state created: (|00⟩ + |11⟩) / √2"
+    );
+
+
+    updateTwoQDisplay();
+
+}
+
+
+/* =====================================================
+   RESET TWO QUBITS
+===================================================== */
+
+function resetTwoQubit() {
+
+    twoQState = [
+
+        complex(1),
+
+        complex(0),
+
+        complex(0),
+
+        complex(0)
+
+    ];
+
+
+    document
+        .querySelectorAll(
+            '.basis-btn[data-q="1"]'
+        )
+        .forEach(
+            button =>
+                button.classList.toggle(
+                    "active",
+                    button.dataset.value === "0"
+                )
+        );
+
+
+    document
+        .querySelectorAll(
+            '.basis-btn[data-q="2"]'
+        )
+        .forEach(
+            button =>
+                button.classList.toggle(
+                    "active",
+                    button.dataset.value === "0"
+                )
+        );
+
+
+    updateTwoQStatus(
+        "Two-qubit system reset to |00⟩."
+    );
+
+
+    updateTwoQDisplay();
+
+}
+
+
+/* =====================================================
+   TWO-QUBIT STATUS
+===================================================== */
+
+function updateTwoQStatus(
+    message
+) {
+
+    const status =
+        document.getElementById(
+            "twoQStatus"
+        );
+
+
+    if (status) {
+
+        status.textContent =
+            message;
+
+    }
+
+}
+
+
+/* =====================================================
+   UPDATE TWO-QUBIT DISPLAY
+===================================================== */
+
+function updateTwoQDisplay() {
+
+    const stateText =
+        formatTwoQState();
+
+
+    const stateDisplay =
+        document.getElementById(
+            "twoQState"
+        );
+
+
+    const equation =
+        document.getElementById(
+            "twoQEquation"
+        );
+
+
+    const vector =
+        document.getElementById(
+            "twoQVector"
+        );
+
+
+    if (stateDisplay) {
+
+        stateDisplay.textContent =
+            stateText;
+
+    }
+
+
+    if (equation) {
+
+        equation.textContent =
+            stateText;
+
+    }
+
+
+    if (vector) {
+
+        vector.innerHTML =
+            twoQState
+                .map(
+                    amplitude =>
+                        `<div>[ ${formatAmplitude(
+                            amplitude
+                        )} ]</div>`
+                )
+                .join("");
+
+    }
+
+
+    updateTwoQProbabilities();
+
+    updateConcurrence();
+
+}
+
+
+/* =====================================================
+   TWO-QUBIT PROBABILITIES
+===================================================== */
+
+function updateTwoQProbabilities() {
+
+    twoQState.forEach(
+        (amplitude, index) => {
+
+            const probability =
+                Math.max(
+                    0,
+                    Math.min(
+                        1,
+                        complexAbsSquared(
+                            amplitude
+                        )
+                    )
+                );
+
+
+            const percent =
+                probability * 100;
+
+
+            const basis =
+                twoQBases[index];
+
+
+            const value =
+                document.getElementById(
+                    `prob${basis}`
+                );
+
+
+            const bar =
+                document.getElementById(
+                    `bar${basis}`
+                );
+
+
+            if (value) {
+
+                value.textContent =
+                    `${percent.toFixed(1)}%`;
+
+            }
+
+
+            if (bar) {
+
+                bar.style.width =
+                    `${percent}%`;
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   CONCURRENCE
+===================================================== */
+
+/*
+    For a pure two-qubit state:
+
+    C = 2 |ad - bc|
+
+    C = 0  → separable
+    C = 1  → maximally entangled
+*/
+
+function calculateConcurrence() {
+
+    const a =
+        twoQState[0];
+
+    const b =
+        twoQState[1];
+
+    const cAmp =
+        twoQState[2];
+
+    const d =
+        twoQState[3];
+
+
+    const ad = {
+
+        re:
+            a.re * d.re -
+            a.im * d.im,
+
+        im:
+            a.re * d.im +
+            a.im * d.re
+
+    };
+
+
+    const bc = {
+
+        re:
+            b.re * cAmp.re -
+            b.im * cAmp.im,
+
+        im:
+            b.re * cAmp.im +
+            b.im * cAmp.re
+
+    };
+
+
+    const difference = {
+
+        re:
+            ad.re - bc.re,
+
+        im:
+            ad.im - bc.im
+
+    };
+
+
+    return Math.min(
+        1,
+        2 *
+        Math.sqrt(
+            complexAbsSquared(
+                difference
+            )
+        )
+    );
+
+}
+
+
+/* =====================================================
+   UPDATE CONCURRENCE DISPLAY
+===================================================== */
+
+function updateConcurrence() {
+
+    const value =
+        calculateConcurrence();
+
+
+    const valueElement =
+        document.getElementById(
+            "concurrenceValue"
+        );
+
+
+    const bar =
+        document.getElementById(
+            "concurrenceBar"
+        );
+
+
+    const result =
+        document.getElementById(
+            "entanglementResult"
+        );
+
+
+    if (valueElement) {
+
+        valueElement.textContent =
+            value.toFixed(2);
+
+    }
+
+
+    if (bar) {
+
+        bar.style.width =
+            `${value * 100}%`;
+
+    }
+
+
+    if (result) {
+
+        if (value > 0.999) {
+
+            result.textContent =
+                "Maximally Entangled";
+
+        }
+
+        else if (value > 0.001) {
+
+            result.textContent =
+                "Entangled State";
+
+        }
+
+        else {
+
+            result.textContent =
+                "Separable State";
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   PAGE INITIALIZATION
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        /*
+            Only load the Python state if the
+            current page contains the relevant
+            single-qubit elements.
+        */
+
+        if (
+            document.getElementById(
+                "blochSphere"
+            ) ||
+            document.getElementById(
+                "currentState"
+            )
+        ) {
+
+            loadState();
+
+        }
+
+
+        /*
+            Initialize the two-qubit explorer.
+        */
+
+        if (
+            document.getElementById(
+                "doubleExplorer"
+            )
+        ) {
+
+            updateTwoQDisplay();
+
+        }
+
+    }
+);
