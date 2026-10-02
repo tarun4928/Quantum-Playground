@@ -25,6 +25,7 @@ body {
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 a {
@@ -190,9 +191,9 @@ nav {
 
     width: calc(100% - 245px);
 
-    padding: 55px 65px;
+    min-width: 0;
 
-    max-width: 1500px;
+    padding: 55px 65px;
 }
 
 
@@ -600,9 +601,16 @@ nav {
 .workspace-grid {
     display: grid;
 
-    grid-template-columns: 1fr 1.4fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
 
     gap: 18px;
+}
+
+
+.workspace-grid > *,
+.twoq-grid > *,
+.twoq-bottom-grid > * {
+    min-width: 0;
 }
 
 .subheading {
@@ -1507,7 +1515,7 @@ nav {
 
 /* RESPONSIVE */
 
-@media (max-width: 1000px) {
+@media (max-width: 1150px) {
 
     .sidebar {
         width: 200px;

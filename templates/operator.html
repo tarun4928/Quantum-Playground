@@ -142,6 +142,24 @@
             <div class="panel-title">
                 <div>
                     <span class="panel-number">03</span>
+                    <h2>Calculate \(AX\)</h2>
+                </div>
+                <div class="operator-action-row">
+                    <button class="primary-btn" onclick="analyzeOperator()">Calculate Operator</button>
+                    <button class="secondary-btn" onclick="resetOperatorLab()">Reset</button>
+                </div>
+            </div>
+
+            <div class="equation-card" id="matrixCalculation">
+                Enter \(A\) and \(X\), then calculate the transformation.
+            </div>
+        </section>
+
+
+        <section class="panel operator-step-panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">04</span>
                     <h2>Vector Geometry — Actual Magnitude</h2>
                 </div>
                 <span class="live-badge">REAL COMPONENTS</span>
@@ -180,7 +198,7 @@
             <section class="panel operator-sphere-panel">
                 <div class="panel-title">
                     <div>
-                        <span class="panel-number">04</span>
+                        <span class="panel-number">05</span>
                         <h2>Bloch Sphere — Input \(X\)</h2>
                     </div>
                 </div>
@@ -198,7 +216,7 @@
             <section class="panel operator-sphere-panel">
                 <div class="panel-title">
                     <div>
-                        <span class="panel-number">05</span>
+                        <span class="panel-number">06</span>
                         <h2>Bloch Sphere — Output \(AX\)</h2>
                     </div>
                 </div>
@@ -212,23 +230,6 @@
                     The second sphere shows the normalized direction of \(AX\).
                 </p>
             </section>
-        </section>
-
-        <section class="panel operator-step-panel">
-            <div class="panel-title">
-                <div>
-                    <span class="panel-number">06</span>
-                    <h2>Calculate \(AX\)</h2>
-                </div>
-                <div class="operator-action-row">
-                    <button class="primary-btn" onclick="analyzeOperator()">Calculate Operator</button>
-                    <button class="secondary-btn" onclick="resetOperatorLab()">Reset</button>
-                </div>
-            </div>
-
-            <div class="equation-card" id="matrixCalculation">
-                Enter \(A\) and \(X\), then calculate the transformation.
-            </div>
         </section>
 
         <section class="panel operator-step-panel">
