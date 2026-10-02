@@ -18,6 +18,17 @@
     <!-- Plotly for 3D Bloch Sphere -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
+    <!-- MathJax for quantum-state notation -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
 </head>
 
 
@@ -80,7 +91,7 @@
             <a href="/measurement"
                class="nav-item">
 
-                <span>▥</span>
+                <span>▣</span>
                 Measurement Lab
 
             </a>
@@ -215,14 +226,71 @@
                 </div>
 
 
+                <div class="state-definition-panel">
+
+                    <div class="operator-label-row">
+                        <span>Define Initial Qubit State</span>
+                        <small>2 × 1 complex column vector</small>
+                    </div>
+
+                    <div class="initial-state-equation">
+                        \[
+                        |\psi\rangle =
+                        \begin{bmatrix}
+                        \alpha\\
+                        \beta
+                        \end{bmatrix}
+                        \]
+                    </div>
+
+                    <div class="initial-state-grid">
+                        <div>
+                            <label class="operator-input-label" for="initialReal0">Re(α)</label>
+                            <input id="initialReal0" class="operator-input" type="number" step="any" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="operator-input-label" for="initialImag0">Im(α)</label>
+                            <input id="initialImag0" class="operator-input" type="number" step="any" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="operator-input-label" for="initialReal1">Re(β)</label>
+                            <input id="initialReal1" class="operator-input" type="number" step="any" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="operator-input-label" for="initialImag1">Im(β)</label>
+                            <input id="initialImag1" class="operator-input" type="number" step="any" placeholder="0">
+                        </div>
+                    </div>
+
+                    <div class="preset-row">
+                        <span>Quick states:</span>
+                        <button type="button" class="preset-btn" onclick="setPresetState('zero')">|0⟩</button>
+                        <button type="button" class="preset-btn" onclick="setPresetState('one')">|1⟩</button>
+                        <button type="button" class="preset-btn" onclick="setPresetState('plus')">|+⟩</button>
+                        <button type="button" class="preset-btn" onclick="setPresetState('minus')">|−⟩</button>
+                    </div>
+
+                    <p class="operator-help">
+                        Enter any non-zero two-component state. The simulator normalizes it before using it as a quantum state.
+                    </p>
+
+                    <button class="primary-btn full-btn" onclick="setInitialState()">
+                        Set Initial State
+                    </button>
+
+                    <div id="initialStateMessage" class="initial-state-message">
+                        Define your state before applying a gate.
+                    </div>
+
+                </div>
+
+
                 <div class="state-display">
 
-                    <span>
-                        Current State
-                    </span>
+                    <span>Current State</span>
 
                     <strong id="stateDisplay">
-                        |0⟩
+                        Not defined
                     </strong>
 
                 </div>
@@ -236,74 +304,56 @@
                 <div class="gate-grid">
 
 
-                    <button class="gate-btn"
+                    <button class="gate-btn single-gate-control" disabled
                             onclick="applyGate('X')">
 
                         <strong>X</strong>
-
-                        <small>
-                            Pauli-X
-                        </small>
+                        <small>Pauli-X</small>
 
                     </button>
 
 
-                    <button class="gate-btn"
+                    <button class="gate-btn single-gate-control" disabled
                             onclick="applyGate('Y')">
 
                         <strong>Y</strong>
-
-                        <small>
-                            Pauli-Y
-                        </small>
+                        <small>Pauli-Y</small>
 
                     </button>
 
 
-                    <button class="gate-btn"
+                    <button class="gate-btn single-gate-control" disabled
                             onclick="applyGate('Z')">
 
                         <strong>Z</strong>
-
-                        <small>
-                            Pauli-Z
-                        </small>
+                        <small>Pauli-Z</small>
 
                     </button>
 
 
-                    <button class="gate-btn"
+                    <button class="gate-btn single-gate-control" disabled
                             onclick="applyGate('H')">
 
                         <strong>H</strong>
-
-                        <small>
-                            Hadamard
-                        </small>
+                        <small>Hadamard</small>
 
                     </button>
 
 
-                    <button class="gate-btn"
+                    <button class="gate-btn single-gate-control" disabled
                             onclick="applyGate('S')">
 
                         <strong>S</strong>
-
-                        <small>
-                            Phase
-                        </small>
+                        <small>Phase</small>
 
                     </button>
 
 
-                    <button class="gate-btn"
+                    <button class="gate-btn single-gate-control" disabled
                             onclick="applyGate('T')">
 
                         <strong>T</strong>
-
-                        <small>
-                            Phase
-                        </small>
+                        <small>Phase</small>
 
                     </button>
 
@@ -311,10 +361,10 @@
                 </div>
 
 
-                <button class="reset-btn"
+                <button class="reset-btn" id="resetQubitButton" disabled
                         onclick="resetQubit()">
 
-                    ↻ Reset Qubit
+                    ↻ Reset to Initial State
 
                 </button>
 
@@ -326,43 +376,17 @@
                     </h3>
 
                     <p>
-                        Select a quantum gate to transform
-                        the current qubit state.
+                        First define your qubit state, then apply X, Y, Z, H, S or T to transform it.
                     </p>
 
                     <p>
-                        The Python quantum engine calculates
-                        the new state and sends the result
-                        back to the website.
+                        The Python quantum engine calculates the new state and the Bloch sphere updates after every operation.
                     </p>
 
                 </div>
 
-            </section>
 
-
-
-            <!-- =============================================
-                 BLOCH SPHERE
-            ============================================== -->
-
-            <section class="panel bloch-panel">
-
-                <div class="panel-title">
-
-                    <div>
-
-                        <span class="panel-number">
-                            02
-                        </span>
-
-                        <h2>
-                            Bloch Sphere
-                        </h2>
-
-                    </div>
-
-                    <span class="live-badge">
+                <span class="live-badge">
                         LIVE
                     </span>
 
@@ -760,3 +784,4 @@
 </body>
 
 </html>
+

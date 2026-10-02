@@ -2,27 +2,27 @@ import numpy as np
 
 
 def zero_state():
-    """Return the |0> state."""
+    """Return the |0⟩ state."""
     return np.array([1 + 0j, 0 + 0j], dtype=complex)
 
 
 def one_state():
-    """Return the |1> state."""
+    """Return the |1⟩ state."""
     return np.array([0 + 0j, 1 + 0j], dtype=complex)
 
 
 def plus_state():
-    """Return the |+> state."""
+    """Return the |+⟩ state."""
     return np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
 
 
 def minus_state():
-    """Return the |-> state."""
+    """Return the |−⟩ state."""
     return np.array([1 / np.sqrt(2), -1 / np.sqrt(2)], dtype=complex)
 
 
 def normalize_state(state):
-    """Normalize a quantum state."""
+    """Normalize a quantum state and reject the zero vector."""
     state = np.asarray(state, dtype=complex)
     norm = np.linalg.norm(state)
 

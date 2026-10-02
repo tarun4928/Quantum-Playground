@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Define Your Own Quantum Gate | Quantum Playground</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+<div class="app-container">
+
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">⚛</div>
+            <div>
+                <h2>Quantum</h2>
+                <span>Playground</span>
+            </div>
+        </div>
+
+        <nav>
+            <a href="/" class="nav-item"><span>⌂</span> Home</a>
+            <a href="/explore" class="nav-item"><span>◉</span> Explore</a>
+            <a href="/circuit" class="nav-item"><span>⚡</span> Circuit Lab</a>
+            <a href="/measurement" class="nav-item"><span>▣</span> Measurement Lab</a>
+            <a href="/entanglement" class="nav-item"><span>∞</span> Entanglement Lab</a>
+            <a href="/operator" class="nav-item active operator-nav-item"><span>λ</span> Define Your Own Quantum Gate</a>
+            <div class="nav-divider"></div>
+            <a href="/learn" class="nav-item"><span>📖</span> Learn</a>
+            <a href="/about" class="nav-item"><span>ⓘ</span> About</a>
+            <a href="/help" class="nav-item"><span>?</span> Help</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <span class="status-dot"></span>
+            Quantum Engine Ready
+        </div>
+    </aside>
+
+    <main class="main-content operator-main">
+
+        <div class="page-heading">
+            <p class="section-label">OPERATOR LAB</p>
+            <h1>Define Your Own Quantum Gate</h1>
+            <p>
+                Enter a 2 × 2 matrix and a column vector. The lab shows the actual vector transformation,
+                preserves the magnitude information, maps the normalized direction to the Bloch sphere,
+                finds the eigenvalues, and tests the condition \(AX=\lambda X\).
+            </p>
+        </div>
+
+        <section class="panel operator-step-panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">01</span>
+                    <h2>Define Your Operator</h2>
+                </div>
+                <span id="operatorTypeBadge" class="operator-badge neutral">Waiting for calculation</span>
+            </div>
+
+            <div class="operator-input-layout">
+                <div class="matrix-input-card">
+                    <div class="operator-label-row">
+                        <span>Matrix \(A\)</span>
+                        <small>2 × 2 only</small>
+                    </div>
+
+                    <div class="matrix-grid">
+                        <span class="bracket left">[</span>
+                        <input id="a11" class="operator-input" type="text" placeholder="a">
+                        <input id="a12" class="operator-input" type="text" placeholder="b">
+                        <input id="a21" class="operator-input" type="text" placeholder="c">
+                        <input id="a22" class="operator-input" type="text" placeholder="d">
+                        <span class="bracket right">]</span>
+                    </div>
+
+                    <p class="operator-help">
+                        Examples: <code>2</code>, <code>-0.5</code>, <code>i</code>, <code>1+i</code>, <code>2-3i</code>
+                    </p>
+                </div>
+
+                <div class="operator-definition-card">
+                    <div class="operator-formula-title">Eigenvalue idea</div>
+                    <div class="operator-formula">\[AX=\lambda X\]</div>
+                    <p>
+                        An eigenvector keeps its direction under the transformation. The scalar \(\lambda\)
+                        tells us the change in magnitude and, for complex values, the phase change.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel operator-step-panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">02</span>
+                    <h2>Enter Your Column Vector</h2>
+                </div>
+                <span class="live-badge">LIVE</span>
+            </div>
+
+            <div class="vector-entry-row">
+                <div class="column-vector-card">
+                    <div class="operator-label-row">
+                        <span>Test Vector \(X\)</span>
+                        <small>2 × 1 column vector</small>
+                    </div>
+                    <div class="column-vector-input">
+                        <span class="bracket">[</span>
+                        <input id="x1" class="operator-input" type="text" placeholder="x₁">
+                        <input id="x2" class="operator-input" type="text" placeholder="x₂">
+                        <span class="bracket">]</span>
+                    </div>
+                    <p class="operator-help">
+                        Enter a non-zero vector. For real vectors, the lab also draws the actual magnitude and direction.
+                    </p>
+                </div>
+
+                <div id="vectorStatus" class="operator-status neutral">
+                    Enter a non-zero column vector \(X\).
+                </div>
+            </div>
+        </section>
+
+        <section class="panel operator-step-panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">03</span>
+                    <h2>Vector Geometry — Actual Magnitude</h2>
+                </div>
+                <span class="live-badge">REAL COMPONENTS</span>
+            </div>
+
+            <div class="vector-geometry-grid">
+                <div class="vector-geometry-card">
+                    <div class="operator-label-row">
+                        <span>Original vector \(X\)</span>
+                        <strong id="inputVectorMagnitude" class="geometry-magnitude">—</strong>
+                    </div>
+                    <svg id="inputVectorDiagram" class="vector-diagram" viewBox="0 0 520 360" role="img" aria-label="Original vector diagram"></svg>
+                    <p id="inputVectorGeometryCaption" class="sphere-caption">
+                        For a real vector, the arrow shows the true magnitude of \(X\).
+                    </p>
+                </div>
+
+                <div class="vector-geometry-card">
+                    <div class="operator-label-row">
+                        <span>Transformed vector \(AX\)</span>
+                        <strong id="outputVectorMagnitude" class="geometry-magnitude">—</strong>
+                    </div>
+                    <svg id="outputVectorDiagram" class="vector-diagram" viewBox="0 0 520 360" role="img" aria-label="Transformed vector diagram"></svg>
+                    <p id="outputVectorGeometryCaption" class="sphere-caption">
+                        Calculate the operator to display the transformed vector.
+                    </p>
+                </div>
+            </div>
+
+            <div id="magnitudeComparison" class="magnitude-comparison neutral">
+                Enter the matrix and vector, then calculate \(AX\) to compare magnitudes.
+            </div>
+        </section>
+
+        <section class="operator-bloch-grid">
+            <section class="panel operator-sphere-panel">
+                <div class="panel-title">
+                    <div>
+                        <span class="panel-number">04</span>
+                        <h2>Bloch Sphere — Input \(X\)</h2>
+                    </div>
+                </div>
+                <div id="operatorInputSphere" class="operator-sphere"></div>
+                <div class="operator-coordinate-row">
+                    <div><span>X</span><strong id="inputCoordX">—</strong></div>
+                    <div><span>Y</span><strong id="inputCoordY">—</strong></div>
+                    <div><span>Z</span><strong id="inputCoordZ">—</strong></div>
+                </div>
+                <p class="sphere-caption">
+                    The Bloch sphere uses the normalized direction of \(X\), so it does not show ordinary vector length.
+                </p>
+            </section>
+
+            <section class="panel operator-sphere-panel">
+                <div class="panel-title">
+                    <div>
+                        <span class="panel-number">05</span>
+                        <h2>Bloch Sphere — Output \(AX\)</h2>
+                    </div>
+                </div>
+                <div id="operatorOutputSphere" class="operator-sphere"></div>
+                <div class="operator-coordinate-row">
+                    <div><span>X</span><strong id="outputCoordX">—</strong></div>
+                    <div><span>Y</span><strong id="outputCoordY">—</strong></div>
+                    <div><span>Z</span><strong id="outputCoordZ">—</strong></div>
+                </div>
+                <p id="outputSphereCaption" class="sphere-caption">
+                    The second sphere shows the normalized direction of \(AX\).
+                </p>
+            </section>
+        </section>
+
+        <section class="panel operator-step-panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">06</span>
+                    <h2>Calculate \(AX\)</h2>
+                </div>
+                <div class="operator-action-row">
+                    <button class="primary-btn" onclick="analyzeOperator()">Calculate Operator</button>
+                    <button class="secondary-btn" onclick="resetOperatorLab()">Reset</button>
+                </div>
+            </div>
+
+            <div class="equation-card" id="matrixCalculation">
+                Enter \(A\) and \(X\), then calculate the transformation.
+            </div>
+        </section>
+
+        <section class="panel operator-step-panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">07</span>
+                    <h2>Find Eigenvalues</h2>
+                </div>
+            </div>
+
+            <div class="equation-card" id="characteristicEquation">
+                \[
+                \det(A-\lambda I)=0
+                \]
+            </div>
+
+            <div id="eigenvalueList" class="eigenvalue-grid">
+                <div class="operator-placeholder">Eigenvalues will appear here.</div>
+            </div>
+
+            <div id="eigenvectorList" class="eigenvector-grid">
+                <div class="operator-placeholder">Corresponding eigenvectors will appear here.</div>
+            </div>
+        </section>
+
+        <section class="panel operator-step-panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">08</span>
+                    <h2>Verify \(AX=\lambda X\)</h2>
+                </div>
+                <span id="eigenStatusBadge" class="operator-badge neutral">Not tested</span>
+            </div>
+
+            <div class="verification-grid">
+                <div class="verification-card">
+                    <span class="verification-title">Input vector \(X\)</span>
+                    <div id="verificationX" class="vector-display">[ — ]<br>[ — ]</div>
+                </div>
+                <div class="verification-card">
+                    <span class="verification-title">Transformed vector \(AX\)</span>
+                    <div id="verificationAX" class="vector-display">[ — ]<br>[ — ]</div>
+                </div>
+                <div class="verification-card">
+                    <span class="verification-title">Comparison \(\lambda X\)</span>
+                    <div id="verificationLambdaX" class="vector-display">[ — ]<br>[ — ]</div>
+                </div>
+            </div>
+
+            <div id="verificationEquation" class="equation-card verification-equation">
+                The site will compare \(AX\) with \(\lambda X\) for your input vector.
+            </div>
+
+            <div id="verificationDetails" class="verification-details neutral">
+                Enter the matrix and vector, then run the calculation.
+            </div>
+        </section>
+
+        <section class="panel operator-note-panel">
+            <div class="operator-note">
+                <strong>Important:</strong>
+                the vector diagrams above preserve the actual magnitude. The Bloch spheres normalize the vectors,
+                because a Bloch sphere represents the physical qubit direction rather than ordinary vector length.
+                A general 2 × 2 matrix is a mathematical operator; it is a quantum gate only when it is unitary,
+                \(A^\dagger A=I\).
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

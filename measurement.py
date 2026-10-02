@@ -4,80 +4,46 @@ from states import normalize_state
 
 
 def measurement_probabilities(state):
-    """
-    Return probabilities of measuring each basis state.
-    """
+    """Return normalized computational-basis probabilities."""
     state = normalize_state(state)
     probabilities = np.abs(state) ** 2
+    probabilities = np.asarray(probabilities, dtype=float)
+    probabilities = np.maximum(probabilities, 0.0)
 
-    # Remove tiny floating-point errors.
-    probabilities = np.real_if_close(probabilities)
-    probabilities = np.maximum(probabilities, 0)
+    total = float(np.sum(probabilities))
+    if total <= 0:
+        raise ValueError("Measurement probabilities must have a positive total.")
 
-    # Make sure probabilities add up to exactly 1.
-    probabilities = probabilities / np.sum(probabilities)
-
-    return probabilities
+    return probabilities / total
 
 
 def measure_once(state):
-    """
-    Perform one quantum measurement.
-
-    Returns the measured basis-state index.
-    """
+    """Perform one projective measurement and return its basis-state index."""
     probabilities = measurement_probabilities(state)
-
     outcomes = np.arange(len(probabilities))
-
-    return int(
-        np.random.choice(
-            outcomes,
-            p=probabilities
-        )
-    )
+    return int(np.random.choice(outcomes, p=probabilities))
 
 
 def measure_many(state, shots=1000):
-    """
-    Perform repeated measurements.
-
-    Returns a dictionary containing the count
-    for each possible result.
-    """
-    if shots <= 0:
+    """Perform repeated measurements and return outcome counts."""
+    if not isinstance(shots, (int, np.integer)) or shots <= 0:
         raise ValueError("Shots must be greater than zero.")
 
     probabilities = measurement_probabilities(state)
-
     outcomes = np.arange(len(probabilities))
-
-    results = np.random.choice(
-        outcomes,
-        size=shots,
-        p=probabilities
-    )
+    results = np.random.choice(outcomes, size=int(shots), p=probabilities)
 
     counts = {}
-
     for result in results:
-        result = str(int(result))
-
-        if result not in counts:
-            counts[result] = 0
-
-        counts[result] += 1
+        key = str(int(result))
+        counts[key] = counts.get(key, 0) + 1
 
     return counts
 
 
 def measurement_percentages(state):
-    """
-    Return measurement probabilities as percentages.
-    """
-    probabilities = measurement_probabilities(state)
-
+    """Return measurement probabilities as percentages."""
     return [
         float(probability * 100)
-        for probability in probabilities
+        for probability in measurement_probabilities(state)
     ]

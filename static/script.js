@@ -3,73 +3,88 @@
    Main JavaScript
 ===================================================== */
 
-
-/* =====================================================
-   GLOBAL STATE
-===================================================== */
-
 let currentState = null;
 
 
 /* =====================================================
-   QUANTUM STATE FORMATTING
+   STATE HELPERS
 ===================================================== */
 
-function formatQuantumState(state) {
+function getStatePayload(data) {
+    return data?.state ?? data?.after_state ?? data?.final_state ?? null;
+}
 
-    if (!state || state.length === 0) {
-        return "|0⟩";
+function getComplexValue(value) {
+    if (value === null || value === undefined) {
+        return { re: 0, im: 0 };
     }
+
+    if (typeof value === "object") {
+        return {
+            re: Number(value.real ?? value.re ?? 0),
+            im: Number(value.imaginary ?? value.imag ?? value.im ?? 0)
+        };
+    }
+
+    if (typeof value === "number") {
+        return { re: value, im: 0 };
+    }
+
+    return { re: 0, im: 0 };
+}
+
+function cleanDisplayNumber(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || Math.abs(n) < 0.0005) return 0;
+    return Number(n.toFixed(3));
+}
+
+function formatComplexCoefficient(value) {
+    const { re: rawRe, im: rawIm } = getComplexValue(value);
+    const re = cleanDisplayNumber(rawRe);
+    const im = cleanDisplayNumber(rawIm);
+
+    if (re === 0 && im === 0) return "";
+    if (im === 0) return String(re);
+    if (re === 0) {
+        if (im === 1) return "i";
+        if (im === -1) return "-i";
+        return `${im}i`;
+    }
+
+    const sign = im >= 0 ? "+" : "-";
+    const imag = Math.abs(im) === 1 ? "i" : `${Math.abs(im)}i`;
+    return `${re}${sign}${imag}`;
+}
+
+function formatQuantumState(state) {
+    if (!state) return "|0⟩";
+
+    // The backend uses a dictionary: {"0": {real, imaginary, ...}, ...}
+    // Arrays are also accepted for compatibility with older frontend data.
+    const entries = Array.isArray(state)
+        ? state.map((value, index) => [String(index), value])
+        : Object.entries(state);
+
+    if (entries.length === 0) return "0";
 
     const terms = [];
 
-    state.forEach((amplitude, index) => {
+    entries.forEach(([basis, amplitude]) => {
+        const { re: rawRe, im: rawIm } = getComplexValue(amplitude);
+        const re = cleanDisplayNumber(rawRe);
+        const im = cleanDisplayNumber(rawIm);
 
-        let real = 0;
-        let imag = 0;
+        if (re === 0 && im === 0) return;
 
-        if (typeof amplitude === "object") {
-            real = amplitude.real ?? amplitude.re ?? 0;
-            imag = amplitude.imag ?? amplitude.im ?? 0;
-        }
-        else if (typeof amplitude === "number") {
-            real = amplitude;
-        }
+        const ket = `|${basis}⟩`;
 
-        if (Math.abs(real) < 0.0001) real = 0;
-        if (Math.abs(imag) < 0.0001) imag = 0;
-
-        if (real === 0 && imag === 0) {
-            return;
-        }
-
-        const basis = `|${index}⟩`;
-
-        if (imag === 0) {
-
-            if (real === 1) {
-                terms.push(basis);
-            }
-            else if (real === -1) {
-                terms.push(`-${basis}`);
-            }
-            else {
-                terms.push(`${real.toFixed(3)}${basis}`);
-            }
-
-        }
-        else {
-
-            let value = `${real.toFixed(3)}`;
-
-            if (imag >= 0) {
-                value += ` + ${imag.toFixed(3)}i`;
-            }
-            else {
-                value += ` - ${Math.abs(imag).toFixed(3)}i`;
-            }
-
-            terms.push(`(${value})${basis}`);
+        if (im === 0) {
+            if (re === 1) terms.push(ket);
+            else if (re === -1) terms.push(`-${ket}`);
+            else terms.push(`${re}${ket}`);
+        } else {
+            terms.push(`(${formatComplexCoefficient({ re, im })})${ket}`);
         }
     });
 
@@ -78,34 +93,24 @@ function formatQuantumState(state) {
 
 
 /* =====================================================
-   LOAD SINGLE-QUBIT STATE
+   LOAD CURRENT STATE
 ===================================================== */
 
 async function loadState() {
-
     try {
-
-        const response = await fetch("/api/state");
-
+        const response = await fetch("/api/state", { cache: "no-store" });
         const data = await response.json();
 
-        if (!data.success) {
-            console.error(data.error);
-            return;
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Request failed (${response.status})`);
         }
 
-        currentState = data.state;
-
+        currentState = data.state_defined ? getStatePayload(data) : null;
         updateSingleQubitDisplay(data);
-
-    }
-    catch (error) {
-
-        console.error(
-            "Could not connect to Quantum Engine.",
-            error
-        );
-
+        updateMeasurementState(data);
+        updateStateControls(Boolean(data.state_defined));
+    } catch (error) {
+        console.error("Could not connect to Quantum Engine.", error);
     }
 }
 
@@ -115,86 +120,200 @@ async function loadState() {
 ===================================================== */
 
 function updateSingleQubitDisplay(data) {
-
-    const stateElement =
-        document.getElementById("currentState");
-
-    const outputElement =
-        document.getElementById("stateOutput");
-
-    const probability0 =
-        document.getElementById("prob0");
-
-    const probability1 =
-        document.getElementById("prob1");
-
-    const bar0 =
-        document.getElementById("bar0");
-
-    const bar1 =
-        document.getElementById("bar1");
-
+    const defined = Boolean(data?.state_defined ?? true);
+    const state = getStatePayload(data);
+    const stateElement = document.getElementById("stateDisplay");
+    const probability0 = document.getElementById("prob0");
+    const probability1 = document.getElementById("prob1");
+    const bar0 = document.getElementById("bar0");
+    const bar1 = document.getElementById("bar1");
 
     if (stateElement) {
-
-        stateElement.textContent =
-            formatQuantumState(data.state);
-
+        stateElement.textContent = defined ? formatQuantumState(state) : "Not defined";
     }
 
+    if (Array.isArray(data.probabilities) && defined) {
+        const p0 = Number(data.probabilities[0] ?? 0);
+        const p1 = Number(data.probabilities[1] ?? 0);
 
-    if (outputElement) {
-
-        outputElement.textContent =
-            formatQuantumState(data.state);
-
+        if (probability0) probability0.textContent = `${(p0 * 100).toFixed(1)}%`;
+        if (probability1) probability1.textContent = `${(p1 * 100).toFixed(1)}%`;
+        if (bar0) bar0.style.width = `${Math.max(0, Math.min(100, p0 * 100))}%`;
+        if (bar1) bar1.style.width = `${Math.max(0, Math.min(100, p1 * 100))}%`;
+    } else {
+        if (probability0) probability0.textContent = "—";
+        if (probability1) probability1.textContent = "—";
+        if (bar0) bar0.style.width = "0%";
+        if (bar1) bar1.style.width = "0%";
     }
 
+    if (defined) {
+        updateBlochSphere(data);
+    } else {
+        renderBlochSpherePlaceholder();
+    }
+}
 
-    if (data.probabilities) {
+function updateMeasurementState(data) {
+    const element = document.getElementById("measurementState");
+    if (!element) return;
 
-        const p0 =
-            data.probabilities[0] ?? 0;
-
-        const p1 =
-            data.probabilities[1] ?? 0;
-
-
-        if (probability0) {
-
-            probability0.textContent =
-                `${(p0 * 100).toFixed(1)}%`;
-
-        }
+    element.textContent = formatQuantumState(getStatePayload(data));
+}
 
 
-        if (probability1) {
+function updateStateControls(enabled) {
+    document.querySelectorAll(".single-gate-control").forEach(button => {
+        button.disabled = !enabled;
+    });
 
-            probability1.textContent =
-                `${(p1 * 100).toFixed(1)}%`;
+    const resetButton = document.getElementById("resetQubitButton");
+    if (resetButton) resetButton.disabled = !enabled;
+}
 
-        }
+function setInitialInputValues(values) {
+    const ids = ["initialReal0", "initialImag0", "initialReal1", "initialImag1"];
+    ids.forEach((id, index) => {
+        const element = document.getElementById(id);
+        if (element) element.value = values[index];
+    });
+    updateInitialVectorPreview();
+}
 
+function setPresetState(name) {
+    const s = 1 / Math.sqrt(2);
+    const presets = {
+        zero: [1, 0, 0, 0],
+        one: [0, 0, 1, 0],
+        plus: [s, 0, s, 0],
+        minus: [s, 0, -s, 0],
+    };
+    if (presets[name]) setInitialInputValues(presets[name]);
+}
 
-        if (bar0) {
+function getInitialStateFromInputs() {
+    const read = id => {
+        const element = document.getElementById(id);
+        if (!element || element.value.trim() === "") return null;
+        const value = Number(element.value);
+        return Number.isFinite(value) ? value : null;
+    };
 
-            bar0.style.width =
-                `${p0 * 100}%`;
+    const values = [
+        read("initialReal0"),
+        read("initialImag0"),
+        read("initialReal1"),
+        read("initialImag1"),
+    ];
 
-        }
+    if (values.some(value => value === null)) return null;
+    if (Math.hypot(...values) === 0) return null;
 
+    return [
+        { real: values[0], imaginary: values[1] },
+        { real: values[2], imaginary: values[3] },
+    ];
+}
 
-        if (bar1) {
+function previewBlochCoordinates(vector) {
+    if (!vector) return null;
+    const magnitude = Math.hypot(
+        vector[0].real, vector[0].imaginary,
+        vector[1].real, vector[1].imaginary
+    );
+    if (magnitude === 0) return null;
 
-            bar1.style.width =
-                `${p1 * 100}%`;
+    const a = { real: vector[0].real / magnitude, imaginary: vector[0].imaginary / magnitude };
+    const b = { real: vector[1].real / magnitude, imaginary: vector[1].imaginary / magnitude };
+    return {
+        x: 2 * (a.real * b.real + a.imaginary * b.imaginary),
+        y: 2 * (a.real * b.imaginary - a.imaginary * b.real),
+        z: a.real * a.real + a.imaginary * a.imaginary - b.real * b.real - b.imaginary * b.imaginary,
+    };
+}
 
-        }
+function updateInitialVectorPreview() {
+    const vector = getInitialStateFromInputs();
+    const preview = document.getElementById("initialVectorPreview");
+    const message = document.getElementById("initialStateMessage");
+
+    if (!vector) {
+        if (preview) preview.textContent = "Enter a non-zero vector to preview it.";
+        if (message) message.textContent = "Enter all four values to define your initial state.";
+        updatePreviewCoordinates(null);
+        renderBlochSpherePlaceholder();
+        return;
     }
 
+    if (preview) {
+        const a = formatComplexCoefficient(vector[0]) || "0";
+        const b = formatComplexCoefficient(vector[1]) || "0";
+        preview.innerHTML = String.raw`\[\lvert\psi\rangle = \begin{bmatrix} ${a} \\ ${b} \end{bmatrix}\]`;
+        if (window.MathJax?.typesetPromise) MathJax.typesetPromise([preview]);
+    }
 
-    updateBlochSphere(data);
+    if (message) message.textContent = "Ready to set this state. The simulator will normalize it.";
+    const coords = previewBlochCoordinates(vector);
+    updatePreviewCoordinates(coords);
+    renderBlochSphere("blochSphere", coords, "Preview");
+}
 
+function updatePreviewCoordinates(coords) {
+    const cx = document.getElementById("coordX");
+    const cy = document.getElementById("coordY");
+    const cz = document.getElementById("coordZ");
+    if (!coords) {
+        if (cx) cx.textContent = "—";
+        if (cy) cy.textContent = "—";
+        if (cz) cz.textContent = "—";
+        return;
+    }
+    if (cx) cx.textContent = Number(coords.x).toFixed(2);
+    if (cy) cy.textContent = Number(coords.y).toFixed(2);
+    if (cz) cz.textContent = Number(coords.z).toFixed(2);
+}
+
+async function setInitialState() {
+    const state = getInitialStateFromInputs();
+    if (!state) {
+        alert("Please enter a valid non-zero two-component column vector.");
+        return;
+    }
+
+    const button = document.querySelector('.state-definition-panel .primary-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Setting...";
+    }
+
+    try {
+        const response = await fetch("/api/state/set", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ state })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `State request failed (${response.status})`);
+        }
+
+        currentState = getStatePayload(data);
+        updateSingleQubitDisplay(data);
+        updateMeasurementState(data);
+        updateStateControls(true);
+
+        const message = document.getElementById("initialStateMessage");
+        if (message) message.textContent = "Initial state set. You can now apply quantum gates.";
+    } catch (error) {
+        console.error(error);
+        alert(`State Error: ${error.message}`);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Set Initial State";
+        }
+    }
 }
 
 
@@ -203,45 +322,23 @@ function updateSingleQubitDisplay(data) {
 ===================================================== */
 
 async function applyGate(gateName) {
-
     try {
+        const response = await fetch(`/api/gate/${encodeURIComponent(gateName)}`, {
+            method: "POST",
+            headers: { "Accept": "application/json" }
+        });
 
-        const response =
-            await fetch(
-                `/api/gate/${gateName}`,
-                {
-                    method: "POST"
-                }
-            );
+        const data = await response.json();
 
-        const data =
-            await response.json();
-
-
-        if (!data.success) {
-
-            alert(
-                "Gate Error: " +
-                data.error
-            );
-
-            return;
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Gate request failed (${response.status})`);
         }
 
-
-        currentState = data.state;
-
+        currentState = getStatePayload(data);
         updateSingleQubitDisplay(data);
-
-    }
-    catch (error) {
-
+    } catch (error) {
         console.error(error);
-
-        alert(
-            "Could not connect to Quantum Engine."
-        );
-
+        alert(`Gate Error: ${error.message}`);
     }
 }
 
@@ -251,42 +348,69 @@ async function applyGate(gateName) {
 ===================================================== */
 
 async function resetState() {
-
     try {
+        const response = await fetch("/api/reset", {
+            method: "POST",
+            headers: { "Accept": "application/json" }
+        });
 
-        const response =
-            await fetch(
-                "/api/reset",
-                {
-                    method: "POST"
-                }
-            );
+        const data = await response.json();
 
-        const data =
-            await response.json();
-
-
-        if (!data.success) {
-
-            alert(
-                "Reset Error: " +
-                data.error
-            );
-
-            return;
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Reset request failed (${response.status})`);
         }
 
-
-        currentState = data.state;
-
+        currentState = data.state_defined ? getStatePayload(data) : null;
         updateSingleQubitDisplay(data);
-
-    }
-    catch (error) {
-
+        updateMeasurementState(data);
+        updateStateControls(Boolean(data.state_defined));
+    } catch (error) {
         console.error(error);
-
+        alert(`Reset Error: ${error.message}`);
     }
+}
+
+// Compatibility with the names used by the current HTML.
+function resetQubit() {
+    return resetState();
+}
+
+
+function renderBlochSpherePlaceholder(targetId = "blochSphere", title = "Input State") {
+    const sphere = document.getElementById(targetId);
+    if (!sphere || !window.Plotly) return;
+
+    const theta = Array.from({ length: 35 }, (_, i) => Math.PI * i / 34);
+    const phi = Array.from({ length: 35 }, (_, i) => 2 * Math.PI * i / 34);
+    const sx = [], sy = [], sz = [];
+
+    theta.forEach(t => {
+        const rx = [], ry = [], rz = [];
+        phi.forEach(p => {
+            rx.push(Math.sin(t) * Math.cos(p));
+            ry.push(Math.sin(t) * Math.sin(p));
+            rz.push(Math.cos(t));
+        });
+        sx.push(rx);
+        sy.push(ry);
+        sz.push(rz);
+    });
+
+    Plotly.react(sphere, [{
+        x: sx, y: sy, z: sz, type: "surface", opacity: 0.10, showscale: false, hoverinfo: "skip"
+    }], {
+        margin: { l: 0, r: 0, t: 25, b: 0 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        scene: {
+            xaxis: { title: "X", range: [-1.2, 1.2] },
+            yaxis: { title: "Y", range: [-1.2, 1.2] },
+            zaxis: { title: "Z", range: [-1.2, 1.2] },
+            aspectmode: "cube"
+        },
+        showlegend: false,
+        title: { text: title, font: { size: 13 } }
+    }, { responsive: true });
 }
 
 
@@ -295,236 +419,151 @@ async function resetState() {
 ===================================================== */
 
 function updateBlochSphere(data) {
+    const sphere = document.getElementById("blochSphere");
+    if (!sphere || !window.Plotly) return;
 
-    const sphere =
-        document.getElementById(
-            "blochSphere"
-        );
+    // Prefer the coordinates calculated by the Python engine.
+    // Fall back to computing them from the state when necessary.
+    let coordinates = data?.bloch_coordinates;
 
-    if (!sphere || !window.Plotly) {
-        return;
-    }
-
-
-    let state = data.state;
-
-    if (!state || state.length < 2) {
-        return;
-    }
-
-
-    function getComplex(value) {
-
-        if (typeof value === "object") {
-
-            return {
-                re: value.real ?? value.re ?? 0,
-                im: value.imag ?? value.im ?? 0
-            };
-
+    if (!coordinates) {
+        const state = getStatePayload(data);
+        if (!state) {
+            renderBlochSpherePlaceholder();
+            return;
         }
+        const entries = Array.isArray(state)
+            ? state
+            : Object.keys(state || {}).sort((a, b) => Number(a) - Number(b)).map(k => state[k]);
 
-        return {
-            re: value,
-            im: 0
+        if (!entries || entries.length < 2) return;
+
+        const alpha = getComplexValue(entries[0]);
+        const beta = getComplexValue(entries[1]);
+        const productRe = alpha.re * beta.re + alpha.im * beta.im;
+        const productIm = alpha.re * beta.im - alpha.im * beta.re;
+
+        coordinates = {
+            x: 2 * productRe,
+            y: 2 * productIm,
+            z:
+                alpha.re * alpha.re + alpha.im * alpha.im -
+                beta.re * beta.re - beta.im * beta.im
         };
     }
 
+    const x = Number(coordinates.x ?? 0);
+    const y = Number(coordinates.y ?? 0);
+    const z = Number(coordinates.z ?? 1);
 
-    const alpha =
-        getComplex(state[0]);
+    const coordX = document.getElementById("coordX");
+    const coordY = document.getElementById("coordY");
+    const coordZ = document.getElementById("coordZ");
 
-    const beta =
-        getComplex(state[1]);
+    if (coordX) coordX.textContent = x.toFixed(2);
+    if (coordY) coordY.textContent = y.toFixed(2);
+    if (coordZ) coordZ.textContent = z.toFixed(2);
 
-
-    /*
-       Bloch coordinates
-
-       x = 2 Re(alpha* beta)
-       y = 2 Im(alpha* beta)
-       z = |alpha|² - |beta|²
-    */
-
-    const conjugateAlphaBeta = {
-
-        re:
-            alpha.re * beta.re +
-            alpha.im * beta.im,
-
-        im:
-            alpha.re * beta.im -
-            alpha.im * beta.re
-    };
-
-
-    const x =
-        2 * conjugateAlphaBeta.re;
-
-    const y =
-        2 * conjugateAlphaBeta.im;
-
-    const z =
-        alpha.re * alpha.re +
-        alpha.im * alpha.im -
-        beta.re * beta.re -
-        beta.im * beta.im;
-
-
-    const theta =
-        Array.from(
-            { length: 50 },
-            (_, i) =>
-                Math.PI * i / 49
-        );
-
-    const phi =
-        Array.from(
-            { length: 50 },
-            (_, i) =>
-                2 * Math.PI * i / 49
-        );
-
-
+    const theta = Array.from({ length: 50 }, (_, i) => Math.PI * i / 49);
+    const phi = Array.from({ length: 50 }, (_, i) => 2 * Math.PI * i / 49);
     const sphereX = [];
     const sphereY = [];
     const sphereZ = [];
 
-
     theta.forEach(t => {
-
         const rowX = [];
         const rowY = [];
         const rowZ = [];
 
-
         phi.forEach(p => {
-
-            rowX.push(
-                Math.sin(t) * Math.cos(p)
-            );
-
-            rowY.push(
-                Math.sin(t) * Math.sin(p)
-            );
-
-            rowZ.push(
-                Math.cos(t)
-            );
-
+            rowX.push(Math.sin(t) * Math.cos(p));
+            rowY.push(Math.sin(t) * Math.sin(p));
+            rowZ.push(Math.cos(t));
         });
-
 
         sphereX.push(rowX);
         sphereY.push(rowY);
         sphereZ.push(rowZ);
-
     });
 
-
     const surface = {
-
         x: sphereX,
         y: sphereY,
         z: sphereZ,
-
         type: "surface",
-
         opacity: 0.15,
-
         showscale: false,
-
         hoverinfo: "skip"
     };
 
-
     const point = {
-
         x: [x],
         y: [y],
         z: [z],
-
         type: "scatter3d",
-
         mode: "markers",
-
-        marker: {
-
-            size: 7
-
-        },
-
-        name: "Quantum State"
+        marker: { size: 7 },
+        name: "Quantum State",
+        hovertemplate: "x=%{x:.3f}<br>y=%{y:.3f}<br>z=%{z:.3f}<extra></extra>"
     };
 
-
     const vector = {
-
         x: [0, x],
         y: [0, y],
         z: [0, z],
-
         type: "scatter3d",
-
         mode: "lines",
-
-        line: {
-
-            width: 6
-
-        },
-
-        name: "State Vector"
+        line: { width: 6 },
+        name: "State Vector",
+        hoverinfo: "skip"
     };
 
+    // A real cone at the tip makes the state vector an arrow rather than a line.
+    const arrow = {
+        type: "cone",
+        x: [x],
+        y: [y],
+        z: [z],
+        u: [x],
+        v: [y],
+        w: [z],
+        anchor: "tip",
+        sizemode: "absolute",
+        sizeref: 0.18,
+        showscale: false,
+        hoverinfo: "skip",
+        name: "State Direction"
+    };
 
     Plotly.react(
         sphere,
-        [surface, vector, point],
+        [surface, vector, arrow, point],
         {
-
-            margin: {
-                l: 0,
-                r: 0,
-                t: 0,
-                b: 0
-            },
-
-            paper_bgcolor:
-                "rgba(0,0,0,0)",
-
-            plot_bgcolor:
-                "rgba(0,0,0,0)",
-
+            margin: { l: 0, r: 0, t: 0, b: 0 },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
             scene: {
-
                 xaxis: {
                     title: "X",
-                    range: [-1.2, 1.2]
+                    range: [-1.2, 1.2],
+                    zeroline: true
                 },
-
                 yaxis: {
                     title: "Y",
-                    range: [-1.2, 1.2]
+                    range: [-1.2, 1.2],
+                    zeroline: true
                 },
-
                 zaxis: {
                     title: "Z",
-                    range: [-1.2, 1.2]
+                    range: [-1.2, 1.2],
+                    zeroline: true
                 },
-
                 aspectmode: "cube"
             },
-
             showlegend: false
-
         },
-
-        {
-            responsive: true
-        }
+        { responsive: true }
     );
-
 }
 
 
@@ -989,194 +1028,79 @@ function displayCircuitSteps(steps) {
 }
 
 
+/* Compatibility names used by the Circuit Lab HTML. */
+function addCircuitGate(gate) {
+    addGate(gate);
+}
+
+function clearCircuit() {
+    resetCircuit();
+}
+
+
 /* =====================================================
    MEASUREMENT LAB
 ===================================================== */
 
 async function runMeasurement() {
+    const shotsElement = document.getElementById("shots");
+    if (!shotsElement) return;
 
-    const shotsElement =
-        document.getElementById(
-            "shots"
-        );
+    const shots = Number.parseInt(shotsElement.value, 10);
 
-
-    if (!shotsElement) {
+    if (!Number.isInteger(shots) || shots < 1 || shots > 10000) {
+        alert("Enter a valid number of shots (1–10000).");
         return;
     }
-
-
-    const shots =
-        parseInt(
-            shotsElement.value
-        );
-
-
-    if (
-        isNaN(shots) ||
-        shots < 1
-    ) {
-
-        alert(
-            "Enter a valid number of shots."
-        );
-
-        return;
-    }
-
 
     try {
+        const response = await fetch("/api/measurement", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ shots })
+        });
 
-        const response =
-            await fetch(
-                "/api/measurement",
-                {
+        const data = await response.json();
 
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            shots: shots
-                        })
-
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!data.success) {
-
-            alert(
-                "Measurement Error: " +
-                data.error
-            );
-
-            return;
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Measurement request failed (${response.status})`);
         }
 
-
-        const count0 =
-            data.counts["0"] || 0;
-
-        const count1 =
-            data.counts["1"] || 0;
-
-
         displayMeasurement(
-            count0,
-            count1
+            Number(data.counts?.["0"] ?? 0),
+            Number(data.counts?.["1"] ?? 0)
         );
-
-    }
-    catch (error) {
-
+    } catch (error) {
         console.error(error);
-
+        alert(`Measurement Error: ${error.message}`);
     }
-
 }
 
+function displayMeasurement(count0, count1) {
+    const result0 = document.getElementById("measurement0");
+    const result1 = document.getElementById("measurement1");
+    const value0 = document.getElementById("histValue0");
+    const value1 = document.getElementById("histValue1");
+    const bar0 = document.getElementById("hist0");
+    const bar1 = document.getElementById("hist1");
 
-/* -----------------------------------------------------
-   DISPLAY MEASUREMENT
------------------------------------------------------ */
+    if (result0) result0.textContent = count0;
+    if (result1) result1.textContent = count1;
+    if (value0) value0.textContent = count0;
+    if (value1) value1.textContent = count1;
 
-function displayMeasurement(
-    count0,
-    count1
-) {
-
-    const result0 =
-        document.getElementById(
-            "measurement0"
-        );
-
-    const result1 =
-        document.getElementById(
-            "measurement1"
-        );
-
-
-    const value0 =
-        document.getElementById(
-            "histValue0"
-        );
-
-    const value1 =
-        document.getElementById(
-            "histValue1"
-        );
-
-
-    const bar0 =
-        document.getElementById(
-            "hist0"
-        );
-
-    const bar1 =
-        document.getElementById(
-            "hist1"
-        );
-
-
-    if (result0)
-        result0.textContent =
-            count0;
-
-
-    if (result1)
-        result1.textContent =
-            count1;
-
-
-    if (value0)
-        value0.textContent =
-            count0;
-
-
-    if (value1)
-        value1.textContent =
-            count1;
-
-
-    const total =
-        count0 + count1;
-
-
-    if (total === 0) {
+    const total = count0 + count1;
+    if (total <= 0) {
+        if (bar0) bar0.style.height = "0%";
+        if (bar1) bar1.style.height = "0%";
         return;
     }
 
-
-    if (bar0) {
-
-        bar0.style.height =
-            `${Math.max(
-                10,
-                count0 / total * 100
-            )}%`;
-
-    }
-
-
-    if (bar1) {
-
-        bar1.style.height =
-            `${Math.max(
-                10,
-                count1 / total * 100
-            )}%`;
-
-    }
-
+    if (bar0) bar0.style.height = `${count0 / total * 100}%`;
+    if (bar1) bar1.style.height = `${count1 / total * 100}%`;
 }
 
 
@@ -1185,97 +1109,46 @@ function displayMeasurement(
 ===================================================== */
 
 async function createBellState() {
-
-    const status =
-        document.getElementById(
-            "entanglementStatus"
-        );
-
+    const status = document.getElementById("entanglementStatus");
 
     try {
+        const response = await fetch("/api/entanglement", {
+            method: "POST",
+            headers: { "Accept": "application/json" }
+        });
 
-        const response =
-            await fetch(
-                "/api/entanglement",
-                {
-                    method: "POST"
-                }
-            );
+        const data = await response.json();
 
-
-        const data =
-            await response.json();
-
-
-        if (!data.success) {
-
-            alert(
-                "Entanglement Error: " +
-                data.error
-            );
-
-            return;
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Entanglement request failed (${response.status})`);
         }
 
+        const amp00 = document.getElementById("amp00");
+        const amp11 = document.getElementById("amp11");
 
-        const amp00 =
-            document.getElementById(
-                "amp00"
-            );
+        const state = data.state || {};
+        const a00 = getComplexValue(state["00"]);
+        const a11 = getComplexValue(state["11"]);
+        const a00Text = Math.abs(a00.im) < 1e-9 ? Math.abs(a00.re).toFixed(3) : formatComplexCoefficient(a00);
+        const a11Text = Math.abs(a11.im) < 1e-9 ? Math.abs(a11.re).toFixed(3) : formatComplexCoefficient(a11);
 
-        const amp11 =
-            document.getElementById(
-                "amp11"
-            );
-
-
-        if (amp00) {
-
-            amp00.textContent =
-                "0.707";
-
-        }
-
-
-        if (amp11) {
-
-            amp11.textContent =
-                "0.707";
-
-        }
-
+        if (amp00) amp00.textContent = a00Text;
+        if (amp11) amp11.textContent = a11Text;
 
         if (status) {
-
             status.innerHTML = `
-
                 <span>✓</span>
-
-                <strong>
-                    Bell State Created
-                </strong>
-
+                <strong>Bell State Created</strong>
                 <p>
-                    The two qubits are
-                    entangled in the Bell state
+                    The two qubits are entangled in the Bell state
                     (|00⟩ + |11⟩)/√2.
                 </p>
-
             `;
-
         }
-
-    }
-    catch (error) {
-
+    } catch (error) {
         console.error(error);
-
-        alert(
-            "Could not connect to Quantum Engine."
-        );
-
+        alert(`Entanglement Error: ${error.message}`);
     }
-
 }
 
 
@@ -2749,5 +2622,983 @@ document.addEventListener(
 
         }
 
+        if (document.getElementById("circuitGates")) {
+            renderCircuit();
+        }
+
+        if (document.getElementById("measurementState")) {
+            loadState();
+        }
+
     }
 );
+
+
+/* =====================================================
+   DEFINE YOUR OWN QUANTUM GATE / OPERATOR LAB
+===================================================== */
+
+function addOperatorLabNav() {
+    const nav = document.querySelector(".sidebar nav");
+    if (!nav || nav.querySelector('a[href="/operator"]')) return;
+
+    const link = document.createElement("a");
+    link.href = "/operator";
+    link.className = "nav-item operator-nav-item";
+    if (window.location.pathname === "/operator") {
+        link.classList.add("active");
+    }
+    link.innerHTML = "<span>λ</span> Define Your Own Quantum Gate";
+
+    const divider = nav.querySelector(".nav-divider");
+    if (divider) nav.insertBefore(link, divider);
+    else nav.appendChild(link);
+}
+
+function parseOperatorComplexInput(value) {
+    if (value === null || value === undefined) return null;
+
+    let s = String(value)
+        .trim()
+        .replace(/\s+/g, "")
+        .replace(/j/gi, "i")
+        .toLowerCase();
+
+    if (!s) return null;
+
+    if (s === "i" || s === "+i") return { re: 0, im: 1 };
+    if (s === "-i") return { re: 0, im: -1 };
+
+    if (!s.includes("i")) {
+        const re = Number(s);
+        return Number.isFinite(re) ? { re, im: 0 } : null;
+    }
+
+    if (!s.endsWith("i") || (s.match(/i/g) || []).length !== 1) return null;
+
+    let body = s.slice(0, -1);
+    if (body === "" || body === "+") return { re: 0, im: 1 };
+    if (body === "-") return { re: 0, im: -1 };
+
+    let split = -1;
+    for (let i = 1; i < body.length; i++) {
+        if (body[i] === "+" || body[i] === "-") split = i;
+    }
+
+    if (split === -1) {
+        const im = Number(body);
+        return Number.isFinite(im) ? { re: 0, im } : null;
+    }
+
+    const re = Number(body.slice(0, split));
+    const im = Number(body.slice(split));
+    if (!Number.isFinite(re) || !Number.isFinite(im)) return null;
+
+    return { re, im };
+}
+
+function getOperatorInputMatrix() {
+    return [
+        [
+            document.getElementById("a11")?.value ?? "",
+            document.getElementById("a12")?.value ?? ""
+        ],
+        [
+            document.getElementById("a21")?.value ?? "",
+            document.getElementById("a22")?.value ?? ""
+        ]
+    ];
+}
+
+function getOperatorInputVector() {
+    return [
+        document.getElementById("x1")?.value ?? "",
+        document.getElementById("x2")?.value ?? ""
+    ];
+}
+
+function getOperatorVectorFromInputs() {
+    const raw = getOperatorInputVector();
+    const vector = raw.map(parseOperatorComplexInput);
+
+    if (vector.some(value => value === null)) return null;
+
+    const magnitude = Math.hypot(
+        vector[0].re,
+        vector[0].im,
+        vector[1].re,
+        vector[1].im
+    );
+
+    if (magnitude < 1e-12) return null;
+
+    return vector;
+}
+
+function formatOperatorComplex(value, precision = 4) {
+    const re = Number(value?.real ?? value?.re ?? 0);
+    const im = Number(value?.imaginary ?? value?.im ?? 0);
+
+    const clean = number => {
+        if (Math.abs(number) < 5e-10) return 0;
+        return Number(number.toFixed(precision));
+    };
+
+    const r = clean(re);
+    const i = clean(im);
+
+    if (i === 0) return String(r);
+
+    if (r === 0) {
+        if (i === 1) return "i";
+        if (i === -1) return "-i";
+        return `${i}i`;
+    }
+
+    const sign = i >= 0 ? "+" : "-";
+    const imag = Math.abs(i) === 1 ? "i" : `${Math.abs(i)}i`;
+    return `${r}${sign}${imag}`;
+}
+
+function formatOperatorComplexLatex(value, precision = 4) {
+    const text = formatOperatorComplex(value, precision);
+    return text.replace(/-/g, "-").replace(/\+/g, "+");
+}
+
+function formatOperatorVector(vector, latex = false) {
+    if (!vector) return latex ? String.raw`\begin{bmatrix} - \\ - \end{bmatrix}` : "[ — ]<br>[ — ]";
+
+    const format = latex
+        ? value => formatOperatorComplexLatex(value)
+        : value => formatOperatorComplex(value);
+
+    if (latex) {
+        return String.raw`\begin{bmatrix} ${format(vector[0])} \\ ${format(vector[1])} \end{bmatrix}`;
+    }
+
+    return `[ ${format(vector[0])} ]<br>[ ${format(vector[1])} ]`;
+}
+
+function setMathJaxHtml(element, latex) {
+    if (!element) return;
+    element.innerHTML = latex;
+    if (window.MathJax?.typesetPromise) {
+        MathJax.typesetPromise([element]).catch(error => console.error("MathJax error:", error));
+    }
+}
+
+function setOperatorCoordinates(prefix, coordinates) {
+    const ids = [
+        `${prefix}CoordX`,
+        `${prefix}CoordY`,
+        `${prefix}CoordZ`
+    ];
+
+    if (!coordinates) {
+        ids.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = "—";
+        });
+        return;
+    }
+
+    [coordinates.x, coordinates.y, coordinates.z].forEach((value, index) => {
+        const element = document.getElementById(ids[index]);
+        if (element) element.textContent = Number(value).toFixed(2);
+    });
+}
+
+function operatorSphereLayout(title) {
+    return {
+        margin: { l: 0, r: 0, t: 34, b: 0 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        scene: {
+            xaxis: { title: "X", range: [-1.2, 1.2], zeroline: true },
+            yaxis: { title: "Y", range: [-1.2, 1.2], zeroline: true },
+            zaxis: { title: "Z", range: [-1.2, 1.2], zeroline: true },
+            aspectmode: "cube"
+        },
+        showlegend: false,
+        title: { text: title, font: { size: 12 } }
+    };
+}
+
+function renderOperatorSphere(elementId, coordinates, title) {
+    const sphere = document.getElementById(elementId);
+    if (!sphere || !window.Plotly) return;
+
+    const theta = Array.from({ length: 40 }, (_, i) => Math.PI * i / 39);
+    const phi = Array.from({ length: 40 }, (_, i) => 2 * Math.PI * i / 39);
+
+    const sphereX = [];
+    const sphereY = [];
+    const sphereZ = [];
+
+    theta.forEach(t => {
+        const rowX = [];
+        const rowY = [];
+        const rowZ = [];
+
+        phi.forEach(p => {
+            rowX.push(Math.sin(t) * Math.cos(p));
+            rowY.push(Math.sin(t) * Math.sin(p));
+            rowZ.push(Math.cos(t));
+        });
+
+        sphereX.push(rowX);
+        sphereY.push(rowY);
+        sphereZ.push(rowZ);
+    });
+
+    const surface = {
+        x: sphereX,
+        y: sphereY,
+        z: sphereZ,
+        type: "surface",
+        opacity: 0.15,
+        showscale: false,
+        hoverinfo: "skip"
+    };
+
+    const traces = [surface];
+
+    if (coordinates) {
+        const x = Number(coordinates.x);
+        const y = Number(coordinates.y);
+        const z = Number(coordinates.z);
+
+        traces.push({
+            x: [0, x],
+            y: [0, y],
+            z: [0, z],
+            type: "scatter3d",
+            mode: "lines",
+            line: { width: 6 },
+            hoverinfo: "skip"
+        });
+
+        traces.push({
+            type: "cone",
+            x: [x],
+            y: [y],
+            z: [z],
+            u: [x],
+            v: [y],
+            w: [z],
+            anchor: "tip",
+            sizemode: "absolute",
+            sizeref: 0.16,
+            showscale: false,
+            hoverinfo: "skip"
+        });
+
+        traces.push({
+            x: [x],
+            y: [y],
+            z: [z],
+            type: "scatter3d",
+            mode: "markers",
+            marker: { size: 7 },
+            hovertemplate: "x=%{x:.3f}<br>y=%{y:.3f}<br>z=%{z:.3f}<extra></extra>"
+        });
+    }
+
+    Plotly.react(
+        sphere,
+        traces,
+        operatorSphereLayout(title),
+        { responsive: true, displayModeBar: false }
+    );
+}
+
+function realVectorFromSerialized(vector) {
+    if (!vector || vector.length !== 2) return null;
+    const first = vector[0];
+    const second = vector[1];
+    if (Math.abs(Number(first.imaginary ?? 0)) > 1e-8) return null;
+    if (Math.abs(Number(second.imaginary ?? 0)) > 1e-8) return null;
+
+    return {
+        x: Number(first.real ?? 0),
+        y: Number(second.real ?? 0),
+        magnitude: Math.hypot(
+            Number(first.real ?? 0),
+            Number(second.real ?? 0)
+        )
+    };
+}
+
+function drawVectorDiagram(svgId, geometry, label, colorClass) {
+    const svg = document.getElementById(svgId);
+    if (!svg) return;
+
+    const ns = "http://www.w3.org/2000/svg";
+    svg.innerHTML = "";
+
+    if (!geometry) {
+        const message = document.createElementNS(ns, "text");
+        message.setAttribute("x", "260");
+        message.setAttribute("y", "180");
+        message.setAttribute("text-anchor", "middle");
+        message.setAttribute("class", "diagram-empty-text");
+        message.textContent = "Real-component vector diagram appears here after valid real inputs.";
+        svg.appendChild(message);
+        return;
+    }
+
+    const width = 520;
+    const height = 360;
+    const origin = { x: 90, y: 270 };
+
+    const maxComponent = Math.max(1, Math.abs(geometry.x), Math.abs(geometry.y));
+    let bound = Math.ceil(maxComponent * 1.25);
+    bound = Math.max(bound, 2);
+
+    const pixelsPerUnit = Math.min(
+        (width - origin.x - 35) / bound,
+        (origin.y - 30) / bound,
+        70
+    );
+
+    const toSvg = (x, y) => ({
+        x: origin.x + x * pixelsPerUnit,
+        y: origin.y - y * pixelsPerUnit
+    });
+
+    const group = document.createElementNS(ns, "g");
+    svg.appendChild(group);
+
+    let step = 1;
+    if (bound > 12) step = 2;
+    if (bound > 25) step = 5;
+    if (bound > 60) step = 10;
+
+    for (let value = -bound; value <= bound; value += step) {
+        if (value === 0) continue;
+
+        const vertical = document.createElementNS(ns, "line");
+        const p1 = toSvg(value, -bound);
+        const p2 = toSvg(value, bound);
+        vertical.setAttribute("x1", p1.x);
+        vertical.setAttribute("y1", p1.y);
+        vertical.setAttribute("x2", p2.x);
+        vertical.setAttribute("y2", p2.y);
+        vertical.setAttribute("class", "vector-grid-line");
+        group.appendChild(vertical);
+
+        const horizontal = document.createElementNS(ns, "line");
+        const q1 = toSvg(-bound, value);
+        const q2 = toSvg(bound, value);
+        horizontal.setAttribute("x1", q1.x);
+        horizontal.setAttribute("y1", q1.y);
+        horizontal.setAttribute("x2", q2.x);
+        horizontal.setAttribute("y2", q2.y);
+        horizontal.setAttribute("class", "vector-grid-line");
+        group.appendChild(horizontal);
+    }
+
+    const xAxis = document.createElementNS(ns, "line");
+    xAxis.setAttribute("x1", 30);
+    xAxis.setAttribute("y1", origin.y);
+    xAxis.setAttribute("x2", width - 20);
+    xAxis.setAttribute("y2", origin.y);
+    xAxis.setAttribute("class", "vector-axis");
+    xAxis.setAttribute("marker-end", "url(#axisArrow)");
+    group.appendChild(xAxis);
+
+    const yAxis = document.createElementNS(ns, "line");
+    yAxis.setAttribute("x1", origin.x);
+    yAxis.setAttribute("y1", height - 15);
+    yAxis.setAttribute("x2", origin.x);
+    yAxis.setAttribute("y2", 20);
+    yAxis.setAttribute("class", "vector-axis");
+    yAxis.setAttribute("marker-end", "url(#axisArrow)");
+    group.appendChild(yAxis);
+
+    const defs = document.createElementNS(ns, "defs");
+    const axisMarker = document.createElementNS(ns, "marker");
+    axisMarker.setAttribute("id", "axisArrow");
+    axisMarker.setAttribute("markerWidth", "8");
+    axisMarker.setAttribute("markerHeight", "8");
+    axisMarker.setAttribute("refX", "6");
+    axisMarker.setAttribute("refY", "3");
+    axisMarker.setAttribute("orient", "auto");
+    const axisPath = document.createElementNS(ns, "path");
+    axisPath.setAttribute("d", "M0,0 L0,6 L6,3 z");
+    axisPath.setAttribute("class", "axis-arrow-head");
+    axisMarker.appendChild(axisPath);
+    defs.appendChild(axisMarker);
+
+    const vectorMarker = document.createElementNS(ns, "marker");
+    vectorMarker.setAttribute("id", "vectorArrow");
+    vectorMarker.setAttribute("markerWidth", "12");
+    vectorMarker.setAttribute("markerHeight", "12");
+    vectorMarker.setAttribute("refX", "9");
+    vectorMarker.setAttribute("refY", "5");
+    vectorMarker.setAttribute("orient", "auto");
+    const vectorPath = document.createElementNS(ns, "path");
+    vectorPath.setAttribute("d", "M0,0 L0,10 L10,5 z");
+    vectorPath.setAttribute("class", colorClass);
+    vectorMarker.appendChild(vectorPath);
+    defs.appendChild(vectorMarker);
+    svg.appendChild(defs);
+
+    const end = toSvg(geometry.x, geometry.y);
+
+    const vectorLine = document.createElementNS(ns, "line");
+    vectorLine.setAttribute("x1", origin.x);
+    vectorLine.setAttribute("y1", origin.y);
+    vectorLine.setAttribute("x2", end.x);
+    vectorLine.setAttribute("y2", end.y);
+    vectorLine.setAttribute("class", `vector-result-line ${colorClass}`);
+    vectorLine.setAttribute("marker-end", "url(#vectorArrow)");
+    svg.appendChild(vectorLine);
+
+    const point = document.createElementNS(ns, "circle");
+    point.setAttribute("cx", end.x);
+    point.setAttribute("cy", end.y);
+    point.setAttribute("r", "6");
+    point.setAttribute("class", `vector-result-point ${colorClass}`);
+    svg.appendChild(point);
+
+    const axisLabelX = document.createElementNS(ns, "text");
+    axisLabelX.setAttribute("x", width - 30);
+    axisLabelX.setAttribute("y", origin.y - 10);
+    axisLabelX.setAttribute("class", "vector-axis-label");
+    axisLabelX.textContent = "x₁";
+    svg.appendChild(axisLabelX);
+
+    const axisLabelY = document.createElementNS(ns, "text");
+    axisLabelY.setAttribute("x", origin.x + 10);
+    axisLabelY.setAttribute("y", 28);
+    axisLabelY.setAttribute("class", "vector-axis-label");
+    axisLabelY.textContent = "x₂";
+    svg.appendChild(axisLabelY);
+
+    const valueLabel = document.createElementNS(ns, "text");
+    valueLabel.setAttribute("x", end.x + 10);
+    valueLabel.setAttribute("y", end.y - 10);
+    valueLabel.setAttribute("class", "vector-value-label");
+    valueLabel.textContent = `${label} = [${geometry.x}, ${geometry.y}]`;
+    svg.appendChild(valueLabel);
+}
+
+function updateVectorGeometry(result = null) {
+    const vector = result?.vector ?? null;
+    const output = result?.transformed_vector ?? null;
+
+    const inputGeometry = result?.input_geometry ?? realVectorFromSerialized(vector);
+    const outputGeometry = result?.output_geometry ?? realVectorFromSerialized(output);
+
+    const inputMagnitude = document.getElementById("inputVectorMagnitude");
+    const outputMagnitude = document.getElementById("outputVectorMagnitude");
+
+    const inputCaption = document.getElementById("inputVectorGeometryCaption");
+    const outputCaption = document.getElementById("outputVectorGeometryCaption");
+
+    if (inputGeometry) {
+        drawVectorDiagram("inputVectorDiagram", inputGeometry, "X", "vector-input-arrow");
+        if (inputMagnitude) inputMagnitude.textContent = `|X| = ${inputGeometry.magnitude.toFixed(3)}`;
+        if (inputCaption) inputCaption.textContent = `X = [${inputGeometry.x}, ${inputGeometry.y}] with actual magnitude ${inputGeometry.magnitude.toFixed(3)}.`;
+    } else {
+        drawVectorDiagram("inputVectorDiagram", null, "X", "vector-input-arrow");
+        if (inputMagnitude) inputMagnitude.textContent = "Complex vector";
+        if (inputCaption) inputCaption.textContent = "The vector is complex, so the real 2D magnitude diagram is not shown. Its magnitude remains available numerically, and its normalized direction is shown on the Bloch sphere.";
+    }
+
+    if (outputGeometry) {
+        drawVectorDiagram("outputVectorDiagram", outputGeometry, "AX", "vector-output-arrow");
+        if (outputMagnitude) outputMagnitude.textContent = `|AX| = ${outputGeometry.magnitude.toFixed(3)}`;
+        if (outputCaption) outputCaption.textContent = `AX = [${outputGeometry.x}, ${outputGeometry.y}] with actual magnitude ${outputGeometry.magnitude.toFixed(3)}.`;
+    } else {
+        drawVectorDiagram("outputVectorDiagram", null, "AX", "vector-output-arrow");
+        if (outputMagnitude) outputMagnitude.textContent = "Waiting";
+        if (outputCaption) outputCaption.textContent = "Calculate the operator to display the transformed vector.";
+    }
+
+    const comparison = document.getElementById("magnitudeComparison");
+    if (!comparison) return;
+
+    if (!result) {
+        comparison.className = "magnitude-comparison neutral";
+        comparison.textContent = "Enter the matrix and vector, then calculate AX to compare the actual magnitudes.";
+        return;
+    }
+
+    const inMag = Number(result.input_magnitude);
+    const outMag = Number(result.output_magnitude);
+
+    if (!Number.isFinite(inMag) || !Number.isFinite(outMag)) {
+        comparison.className = "magnitude-comparison neutral";
+        comparison.textContent = "Magnitude information is unavailable for this input.";
+        return;
+    }
+
+    const ratio = inMag > 1e-12 ? outMag / inMag : 0;
+    comparison.className = "magnitude-comparison success";
+
+    let behavior = "The magnitude is unchanged.";
+    if (ratio > 1 + 1e-7) behavior = `The output is ${ratio.toFixed(3)}× as long as the input — an expansion/stretch.`;
+    if (ratio < 1 - 1e-7) behavior = `The output is ${ratio.toFixed(3)}× as long as the input — a compression.`;
+
+    comparison.innerHTML = `<strong>|X| = ${inMag.toFixed(3)}</strong> &nbsp; → &nbsp; <strong>|AX| = ${outMag.toFixed(3)}</strong><br>${behavior}`;
+}
+
+function updateOperatorInputSphere() {
+    const vector = getOperatorVectorFromInputs();
+    const status = document.getElementById("vectorStatus");
+
+    if (!vector) {
+        setOperatorCoordinates("input", null);
+        renderOperatorSphere("operatorInputSphere", null, "Input State");
+        updateVectorGeometry(null);
+        if (status) {
+            status.className = "operator-status neutral";
+            status.innerHTML = String.raw`Enter two valid components for a non-zero column vector \(X\).`;
+            if (window.MathJax?.typesetPromise) MathJax.typesetPromise([status]);
+        }
+        return;
+    }
+
+    const norm = Math.hypot(
+        vector[0].re,
+        vector[0].im,
+        vector[1].re,
+        vector[1].im
+    );
+
+    const alpha = {
+        re: vector[0].re / norm,
+        im: vector[0].im / norm
+    };
+
+    const beta = {
+        re: vector[1].re / norm,
+        im: vector[1].im / norm
+    };
+
+    const productRe = alpha.re * beta.re + alpha.im * beta.im;
+    const productIm = alpha.re * beta.im - alpha.im * beta.re;
+
+    const coordinates = {
+        x: 2 * productRe,
+        y: 2 * productIm,
+        z: alpha.re * alpha.re + alpha.im * alpha.im - beta.re * beta.re - beta.im * beta.im
+    };
+
+    setOperatorCoordinates("input", coordinates);
+    renderOperatorSphere("operatorInputSphere", coordinates, "Input State X");
+
+    if (status) {
+        const magnitude = norm.toFixed(3);
+        status.className = "operator-status success";
+        status.innerHTML = String.raw`Vector \(X\) is valid. Magnitude \(\|X\|=${magnitude}\). The Bloch sphere shows its normalized direction.`;
+        if (window.MathJax?.typesetPromise) MathJax.typesetPromise([status]);
+    }
+
+    const inputGeometry = realVectorFromSerialized([
+        { real: vector[0].re, imaginary: vector[0].im },
+        { real: vector[1].re, imaginary: vector[1].im }
+    ]);
+
+    updateVectorGeometry({ input_geometry: inputGeometry, input_magnitude: norm, output_magnitude: NaN });
+}
+
+function clearOperatorResults() {
+    const badge = document.getElementById("operatorTypeBadge");
+    if (badge) {
+        badge.className = "operator-badge neutral";
+        badge.textContent = "Waiting for calculation";
+    }
+
+    const status = document.getElementById("eigenStatusBadge");
+    if (status) {
+        status.className = "operator-badge neutral";
+        status.textContent = "Not tested";
+    }
+
+    const characteristic = document.getElementById("characteristicEquation");
+    if (characteristic) setMathJaxHtml(characteristic, String.raw`\[
+        \det(A-\lambda I)=0
+    \]`);
+
+    const eigenvalueList = document.getElementById("eigenvalueList");
+    if (eigenvalueList) eigenvalueList.innerHTML = '<div class="operator-placeholder">Eigenvalues will appear here.</div>';
+
+    const eigenvectorList = document.getElementById("eigenvectorList");
+    if (eigenvectorList) eigenvectorList.innerHTML = '<div class="operator-placeholder">Corresponding eigenvectors will appear here.</div>';
+
+    const calculation = document.getElementById("matrixCalculation");
+    if (calculation) calculation.innerHTML = String.raw`Enter \(A\) and \(X\), then calculate the transformation.`;
+
+    const verificationX = document.getElementById("verificationX");
+    const verificationAX = document.getElementById("verificationAX");
+    const verificationLambdaX = document.getElementById("verificationLambdaX");
+    const verificationEquation = document.getElementById("verificationEquation");
+    const verificationDetails = document.getElementById("verificationDetails");
+
+    if (verificationX) verificationX.innerHTML = "[ — ]<br>[ — ]";
+    if (verificationAX) verificationAX.innerHTML = "[ — ]<br>[ — ]";
+    if (verificationLambdaX) verificationLambdaX.innerHTML = "[ — ]<br>[ — ]";
+
+    if (verificationEquation) {
+        verificationEquation.innerHTML = String.raw`The site will compare \(AX\) with \(\lambda X\) for your input vector.`;
+    }
+
+    if (verificationDetails) {
+        verificationDetails.className = "verification-details neutral";
+        verificationDetails.textContent = "Enter the matrix and vector, then run the calculation.";
+    }
+
+    setOperatorCoordinates("output", null);
+    renderOperatorSphere("operatorOutputSphere", null, "Output State");
+    updateVectorGeometry(null);
+}
+
+function formatMatrixCalculation(result) {
+    const a = result.matrix;
+    const x = result.vector;
+    const y = result.transformed_vector;
+
+    const a11 = formatOperatorComplexLatex(a[0][0]);
+    const a12 = formatOperatorComplexLatex(a[0][1]);
+    const a21 = formatOperatorComplexLatex(a[1][0]);
+    const a22 = formatOperatorComplexLatex(a[1][1]);
+
+    const x1 = formatOperatorComplexLatex(x[0]);
+    const x2 = formatOperatorComplexLatex(x[1]);
+
+    const y1 = formatOperatorComplexLatex(y[0]);
+    const y2 = formatOperatorComplexLatex(y[1]);
+
+    const row1 = `(${a11})(${x1}) ${a12.startsWith("-") ? "-" : "+"} (${a12.startsWith("-") ? a12.slice(1) : a12})(${x2})`;
+    const row2 = `(${a21})(${x1}) ${a22.startsWith("-") ? "-" : "+"} (${a22.startsWith("-") ? a22.slice(1) : a22})(${x2})`;
+
+    return String.raw`
+        <div class="operator-calculation-title">Matrix multiplication</div>
+        <div class="operator-formula operator-formula-large">
+            \[
+            \begin{bmatrix}
+            ${a11} & ${a12}\\
+            ${a21} & ${a22}
+            \end{bmatrix}
+            \begin{bmatrix}
+            ${x1}\\
+            ${x2}
+            \end{bmatrix}
+            =
+            \begin{bmatrix}
+            ${row1}\\
+            ${row2}
+            \end{bmatrix}
+            =
+            \begin{bmatrix}
+            ${y1}\\
+            ${y2}
+            \end{bmatrix}
+            \]
+        </div>
+        <div class="equation-secondary">
+            The vector on the right is \(AX\). Its actual magnitude is \(${Number(result.output_magnitude).toFixed(4)}\).
+        </div>
+    `;
+}
+
+function renderCharacteristic(result) {
+    const c = result.characteristic;
+    const a = result.matrix;
+
+    const trace = formatOperatorComplexLatex(c.trace);
+    const determinant = formatOperatorComplexLatex(c.determinant);
+    const a11 = formatOperatorComplexLatex(a[0][0]);
+    const a12 = formatOperatorComplexLatex(a[0][1]);
+    const a21 = formatOperatorComplexLatex(a[1][0]);
+    const a22 = formatOperatorComplexLatex(a[1][1]);
+
+    const bCoeff = formatOperatorComplexLatex(c.lambda_coefficient);
+    const dCoeff = formatOperatorComplexLatex(c.constant_coefficient);
+
+    const container = document.getElementById("characteristicEquation");
+    if (!container) return;
+
+    const coefficientTerm = (() => {
+        if (bCoeff === "0") return "";
+        if (bCoeff.startsWith("-")) return `${bCoeff}\\lambda`;
+        if (/^[0-9.]+$/.test(bCoeff)) return `+${bCoeff}\\lambda`;
+        return `+(${bCoeff})\\lambda`;
+    })();
+
+    const constantTerm = (() => {
+        if (dCoeff === "0") return "";
+        if (dCoeff.startsWith("-")) return dCoeff;
+        if (/^[0-9.]+$/.test(dCoeff)) return `+${dCoeff}`;
+        return `+(${dCoeff})`;
+    })();
+
+    container.innerHTML = String.raw`
+        <div class="operator-calculation-title">Characteristic equation</div>
+        <div class="operator-formula">
+            \[
+            \det(A-\lambda I)=0
+            \]
+        </div>
+        <div class="equation-secondary">
+            \[
+            \det\begin{bmatrix}
+            ${a11}-\lambda & ${a12}\\
+            ${a21} & ${a22}-\lambda
+            \end{bmatrix}=0
+            \]
+        </div>
+        <div class="equation-secondary">
+            \[
+            \lambda^2 ${coefficientTerm} ${constantTerm} = 0
+            \]
+        </div>
+        <div class="equation-secondary equation-readable">
+            \(\operatorname{tr}(A)=${trace}\) &nbsp; | &nbsp; \(\det(A)=${determinant}\)
+        </div>
+    `;
+
+    if (window.MathJax?.typesetPromise) MathJax.typesetPromise([container]);
+}
+
+function renderEigenvalues(result) {
+    const container = document.getElementById("eigenvalueList");
+    if (!container) return;
+
+    container.innerHTML = result.eigenvalues.map((value, index) => `
+        <div class="eigenvalue-card">
+            <span class="label">Eigenvalue λ${index + 1}</span>
+            <div class="eigenvalue-formula">\\(${formatOperatorComplexLatex(value)}\\)</div>
+            <div class="equation-readable">Magnitude: ${Number(value.magnitude).toFixed(4)} &nbsp; | &nbsp; Phase: ${Number(value.phase_degrees).toFixed(2)}°</div>
+        </div>
+    `).join("");
+
+    if (window.MathJax?.typesetPromise) MathJax.typesetPromise([container]);
+}
+
+function renderEigenvectors(result) {
+    const container = document.getElementById("eigenvectorList");
+    if (!container) return;
+
+    container.innerHTML = result.eigenvectors.map((item, index) => {
+        const eigenvalue = formatOperatorComplexLatex(item.eigenvalue);
+        const v1 = formatOperatorComplexLatex(item.vector[0]);
+        const v2 = formatOperatorComplexLatex(item.vector[1]);
+        const bx = Number(item.bloch_coordinates?.x ?? 0).toFixed(3);
+        const by = Number(item.bloch_coordinates?.y ?? 0).toFixed(3);
+        const bz = Number(item.bloch_coordinates?.z ?? 0).toFixed(3);
+
+        return String.raw`
+            <div class="eigenvector-card">
+                <span class="label">Eigenvector for λ${index + 1}</span>
+                <div class="eigenvalue-formula eigenvector-math">
+                    \[
+                    \begin{bmatrix}
+                    ${v1}\\
+                    ${v2}
+                    \end{bmatrix}
+                    \]
+                </div>
+                <div class="equation-readable">
+                    Eigenvalue: \(${eigenvalue}\)<br>
+                    Bloch direction: (${bx}, ${by}, ${bz})
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    if (window.MathJax?.typesetPromise) {
+        MathJax.typesetPromise([container]).catch(error => {
+            console.error("MathJax eigenvector rendering error:", error);
+        });
+    }
+}
+
+function renderVerification(result) {
+    const test = result.test;
+    const badge = document.getElementById("eigenStatusBadge");
+    const verificationX = document.getElementById("verificationX");
+    const verificationAX = document.getElementById("verificationAX");
+    const verificationLambdaX = document.getElementById("verificationLambdaX");
+    const equation = document.getElementById("verificationEquation");
+    const details = document.getElementById("verificationDetails");
+
+    if (verificationX) setMathJaxHtml(verificationX, `\\(${formatOperatorVector(result.vector, true)}\\)`);
+    if (verificationAX) setMathJaxHtml(verificationAX, `\\(${formatOperatorVector(test.ax, true)}\\)`);
+
+    if (test.is_eigenvector) {
+        if (verificationLambdaX) {
+            setMathJaxHtml(verificationLambdaX, `\\(${formatOperatorVector(test.lambda_x, true)}\\)`);
+        }
+
+        const lambda = formatOperatorComplexLatex(test.matching_eigenvalue);
+
+        if (equation) {
+            setMathJaxHtml(equation, String.raw`
+                <div class="operator-formula">\[AX=\lambda X\]</div>
+                <div class="equation-secondary">\[AX=${lambda}X\]</div>
+                <div class="equation-secondary">\[AX=\begin{bmatrix}${formatOperatorComplexLatex(test.ax[0])}\\${formatOperatorComplexLatex(test.ax[1])}\end{bmatrix}=\begin{bmatrix}${formatOperatorComplexLatex(test.lambda_x[0])}\\${formatOperatorComplexLatex(test.lambda_x[1])}\end{bmatrix}=\lambda X\]</div>
+            `);
+        }
+
+        if (badge) {
+            badge.className = "operator-badge success";
+            badge.textContent = "EIGENVECTOR ✓";
+        }
+
+        if (details) {
+            details.className = "verification-details success";
+            const scale = Number(test.scale_magnitude ?? 0).toFixed(4);
+            const phase = Number(test.phase_degrees ?? 0).toFixed(2);
+
+            let text = `YES. AX is a scalar multiple of X. Scale factor |λ| = ${scale}. Phase change = ${phase}°. ${test.behavior}.`;
+            if (test.same_bloch_direction) {
+                text += " The normalized Bloch direction is unchanged, so both Bloch spheres point in the same direction.";
+            }
+            details.textContent = text;
+        }
+    } else {
+        if (verificationLambdaX) verificationLambdaX.innerHTML = "No single scalar λ makes AX = λX.";
+
+        if (equation) {
+            setMathJaxHtml(equation, String.raw`
+                <div class="operator-formula">\[AX\ne\lambda X\]</div>
+                <div>Your entered vector is not an eigenvector of this operator because the transformed vector is not parallel to the original vector.</div>
+            `);
+        }
+
+        if (badge) {
+            badge.className = "operator-badge warning";
+            badge.textContent = "NOT AN EIGENVECTOR";
+        }
+
+        if (details) {
+            details.className = "verification-details error";
+            details.textContent = `NO. AX is not parallel to X. Residual norm = ${Number(test.residual_norm).toExponential(3)}. The direction changes under the operator.`;
+        }
+    }
+}
+
+async function analyzeOperator() {
+    const matrix = getOperatorInputMatrix();
+    const vector = getOperatorInputVector();
+    const parsedVector = getOperatorVectorFromInputs();
+
+    if (!matrix.flat().every(value => parseOperatorComplexInput(value) !== null)) {
+        alert("Please enter four valid matrix values for the 2 × 2 matrix A.");
+        return;
+    }
+
+    if (!parsedVector) {
+        alert("Please enter a valid non-zero column vector X.");
+        return;
+    }
+
+    const button = document.querySelector('.operator-action-row .primary-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Calculating...";
+    }
+
+    try {
+        const response = await fetch("/api/operator/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ matrix, vector })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Operator analysis failed (${response.status})`);
+        }
+
+        const badge = document.getElementById("operatorTypeBadge");
+        if (badge) {
+            badge.className = data.is_unitary ? "operator-badge success" : "operator-badge warning";
+            badge.textContent = data.is_unitary ? "VALID QUANTUM GATE" : "MATHEMATICAL OPERATOR";
+        }
+
+        const calculation = document.getElementById("matrixCalculation");
+        if (calculation) calculation.innerHTML = formatMatrixCalculation(data);
+
+        renderCharacteristic(data);
+        renderEigenvalues(data);
+        renderEigenvectors(data);
+        renderVerification(data);
+        updateVectorGeometry(data);
+
+        setOperatorCoordinates("input", data.input_bloch);
+        setOperatorCoordinates("output", data.output_bloch);
+        renderOperatorSphere("operatorInputSphere", data.input_bloch, "Input State X");
+        renderOperatorSphere("operatorOutputSphere", data.output_bloch, "Transformed State AX");
+
+        const outputCaption = document.getElementById("outputSphereCaption");
+        if (outputCaption) {
+            outputCaption.textContent = data.output_bloch
+                ? "AX is normalized only for Bloch-sphere visualization; the vector diagram preserves its actual magnitude."
+                : "AX is the zero vector, so it has no Bloch-sphere direction.";
+        }
+
+        if (window.MathJax?.typesetPromise) {
+            await MathJax.typesetPromise();
+        }
+    } catch (error) {
+        console.error(error);
+        alert(`Operator Error: ${error.message}`);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Calculate Operator";
+        }
+    }
+}
+
+function resetOperatorLab() {
+    ["a11", "a12", "a21", "a22", "x1", "x2"].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.value = "";
+    });
+
+    clearOperatorResults();
+    updateOperatorInputSphere();
+}
+
+function initOperatorLab() {
+    addOperatorLabNav();
+    renderOperatorSphere("operatorInputSphere", null, "Input State");
+    renderOperatorSphere("operatorOutputSphere", null, "Output State");
+
+    ["x1", "x2"].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.addEventListener("input", updateOperatorInputSphere);
+    });
+
+    ["a11", "a12", "a21", "a22"].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.addEventListener("input", clearOperatorResults);
+    });
+
+    updateOperatorInputSphere();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    addOperatorLabNav();
+
+    if (document.getElementById("operatorInputSphere")) {
+        initOperatorLab();
+    }
+
+    if (document.getElementById("initialReal0")) {
+        ["initialReal0", "initialImag0", "initialReal1", "initialImag1"].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.addEventListener("input", updateInitialVectorPreview);
+        });
+        updateInitialVectorPreview();
+    }
+});

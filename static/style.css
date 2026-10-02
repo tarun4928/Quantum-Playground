@@ -2230,3 +2230,637 @@ individual gates.
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+
+/* =====================================================
+   DEFINE YOUR OWN QUANTUM GATE / OPERATOR LAB
+===================================================== */
+
+.operator-main {
+    padding-bottom: 80px;
+}
+
+.operator-input-layout {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+}
+
+.matrix-input-card,
+.operator-definition-card,
+.column-vector-card,
+.verification-card,
+.operator-note-panel {
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.matrix-input-card,
+.operator-definition-card,
+.column-vector-card {
+    padding: 22px;
+}
+
+.operator-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.operator-label-row span,
+.operator-formula-title {
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.operator-label-row small {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.matrix-grid {
+    display: grid;
+    grid-template-columns: 25px 1fr 1fr 25px;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+.matrix-grid .bracket.left {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+}
+
+.matrix-grid .bracket.right {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+}
+
+.bracket {
+    color: var(--purple);
+    font-size: 34px;
+    line-height: 1;
+    text-align: center;
+}
+
+.operator-input {
+    width: 100%;
+    min-width: 0;
+    padding: 13px 14px;
+    background: #080b15;
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.operator-input:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 0 3px rgba(155, 108, 255, 0.10);
+}
+
+.operator-input::placeholder {
+    color: #59607b;
+}
+
+.operator-help,
+.sphere-caption {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.65;
+    margin-top: 15px;
+}
+
+.operator-help code {
+    color: #d9d0ff;
+    background: #0a0d19;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 5px;
+}
+
+.operator-formula {
+    padding: 16px 0 6px;
+    color: var(--purple);
+    font-size: 28px;
+}
+
+.operator-definition-card p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.operator-badge {
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    letter-spacing: 0.6px;
+    font-weight: bold;
+    border: 1px solid var(--border);
+}
+
+.operator-badge.neutral {
+    color: var(--muted);
+    background: rgba(255,255,255,0.03);
+}
+
+.operator-badge.success {
+    color: var(--green);
+    background: rgba(66,214,164,0.08);
+    border-color: rgba(66,214,164,0.25);
+}
+
+.operator-badge.warning {
+    color: var(--orange);
+    background: rgba(255,156,90,0.08);
+    border-color: rgba(255,156,90,0.25);
+}
+
+.vector-entry-row {
+    display: grid;
+    grid-template-columns: minmax(250px, 0.9fr) minmax(240px, 1.1fr);
+    gap: 20px;
+    align-items: center;
+}
+
+.column-vector-input {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) 28px;
+    gap: 10px;
+    align-items: center;
+}
+
+.operator-status,
+.verification-details {
+    padding: 15px 17px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.operator-status.neutral,
+.verification-details.neutral {
+    color: var(--muted);
+    background: rgba(255,255,255,0.02);
+}
+
+.operator-status.success,
+.verification-details.success {
+    color: var(--green);
+    background: rgba(66,214,164,0.06);
+    border-color: rgba(66,214,164,0.18);
+}
+
+.operator-status.error,
+.verification-details.error {
+    color: #ffb0b0;
+    background: rgba(255,80,80,0.06);
+    border-color: rgba(255,80,80,0.20);
+}
+
+.operator-bloch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.operator-sphere-panel {
+    min-width: 0;
+}
+
+.operator-sphere {
+    width: 100%;
+    height: 430px;
+}
+
+.operator-coordinate-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding-top: 10px;
+}
+
+.operator-coordinate-row div {
+    padding: 12px;
+    background: #080b15;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.operator-coordinate-row span {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    margin-bottom: 5px;
+}
+
+.operator-coordinate-row strong {
+    color: var(--purple);
+    font-size: 16px;
+}
+
+.operator-action-row {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
+.equation-card {
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #080b15;
+    color: white;
+    line-height: 1.8;
+    overflow-x: auto;
+}
+
+.equation-card strong {
+    color: var(--purple);
+}
+
+.eigenvalue-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+    margin-top: 18px;
+}
+
+.eigenvalue-card,
+.eigenvector-card {
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel-light);
+}
+
+.eigenvalue-card .label,
+.eigenvector-card .label,
+.verification-title {
+    color: var(--muted);
+    font-size: 11px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.eigenvalue-card strong {
+    color: var(--purple);
+    font-size: 20px;
+}
+
+.eigenvector-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.eigenvector-card .vector-display {
+    margin-top: 8px;
+}
+
+.vector-display {
+    font-family: Consolas, "Courier New", monospace;
+    color: white;
+    line-height: 1.7;
+    font-size: 13px;
+}
+
+.vector-display .accent {
+    color: var(--purple);
+}
+
+.verification-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.verification-card {
+    padding: 18px;
+}
+
+.verification-equation {
+    margin-top: 15px;
+}
+
+.verification-details {
+    margin-top: 15px;
+}
+
+.operator-placeholder {
+    padding: 18px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.operator-note-panel {
+    padding: 18px;
+}
+
+.operator-note {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.75;
+}
+
+.operator-note strong {
+    color: white;
+}
+
+.operator-nav-item {
+    line-height: 1.25;
+}
+
+@media (max-width: 1000px) {
+    .operator-input-layout,
+    .vector-entry-row,
+    .operator-bloch-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .operator-sphere {
+        height: 380px;
+    }
+}
+
+@media (max-width: 700px) {
+    .eigenvalue-grid,
+    .eigenvector-grid,
+    .verification-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .operator-action-row {
+        width: 100%;
+    }
+
+    .operator-action-row button {
+        flex: 1;
+    }
+
+    .operator-sphere {
+        height: 330px;
+    }
+}
+
+/* =====================================================
+   OPERATOR LAB — ACTUAL VECTOR MAGNITUDE DIAGRAMS
+===================================================== */
+
+.vector-geometry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.vector-geometry-card {
+    min-width: 0;
+    padding: 18px;
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.geometry-magnitude {
+    color: var(--purple);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.vector-diagram {
+    display: block;
+    width: 100%;
+    height: 360px;
+    margin-top: 5px;
+    border-radius: 10px;
+    background: #05070e;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.vector-grid-line {
+    stroke: rgba(120, 160, 200, 0.20);
+    stroke-width: 1;
+}
+
+.vector-axis {
+    stroke: rgba(245, 245, 255, 0.9);
+    stroke-width: 2;
+}
+
+.axis-arrow-head {
+    fill: rgba(245, 245, 255, 0.9);
+}
+
+.vector-result-line {
+    stroke-width: 5;
+    stroke-linecap: round;
+}
+
+.vector-input-arrow {
+    fill: var(--purple);
+}
+
+.vector-output-arrow {
+    fill: #ffdb19;
+}
+
+.vector-result-line.vector-input-arrow {
+    stroke: var(--purple);
+}
+
+.vector-result-line.vector-output-arrow {
+    stroke: #ffdb19;
+}
+
+.vector-result-point.vector-input-arrow {
+    fill: var(--purple);
+}
+
+.vector-result-point.vector-output-arrow {
+    fill: #ffdb19;
+}
+
+.vector-axis-label {
+    fill: var(--muted);
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+}
+
+.vector-value-label {
+    fill: white;
+    font-size: 13px;
+    font-family: Consolas, "Courier New", monospace;
+}
+
+.diagram-empty-text {
+    fill: var(--muted);
+    font-size: 13px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.magnitude-comparison {
+    margin-top: 15px;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.magnitude-comparison strong {
+    color: white;
+}
+
+.magnitude-comparison.neutral {
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.magnitude-comparison.success {
+    color: var(--muted);
+    background: rgba(66, 214, 164, 0.06);
+    border-color: rgba(66, 214, 164, 0.18);
+}
+
+.operator-formula-large {
+    font-size: 25px;
+    overflow-x: auto;
+}
+
+.eigenvalue-formula {
+    color: var(--purple);
+    font-size: 21px;
+    margin: 8px 0 12px;
+    overflow-x: auto;
+}
+
+.operator-step-panel .panel-title h2 {
+    line-height: 1.3;
+}
+
+@media (max-width: 1000px) {
+    .vector-geometry-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .vector-diagram {
+        height: 330px;
+    }
+}
+
+@media (max-width: 700px) {
+    .vector-diagram {
+        height: 285px;
+    }
+
+    .geometry-magnitude {
+        font-size: 12px;
+    }
+
+    .operator-formula-large {
+        font-size: 20px;
+    }
+}
+
+/* =====================================================
+   USER-DEFINED INITIAL QUBIT STATE
+===================================================== */
+
+.state-definition-panel {
+    margin-bottom: 20px;
+    padding: 18px;
+    border-radius: 12px;
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+}
+
+.initial-state-equation {
+    min-height: 55px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--purple);
+    margin: 5px 0 10px;
+    font-size: 22px;
+}
+
+.initial-state-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.operator-input-label {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 0 0 6px 2px;
+}
+
+.preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 13px;
+}
+
+.preset-row > span {
+    color: var(--muted);
+    font-size: 10px;
+    margin-right: 3px;
+}
+
+.preset-btn {
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: #0b0e1b;
+    color: white;
+    font-size: 11px;
+}
+
+.preset-btn:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+}
+
+.initial-state-message {
+    margin-top: 10px;
+    padding: 9px 11px;
+    border-radius: 7px;
+    border: 1px solid rgba(155,108,255,0.12);
+    background: rgba(155,108,255,0.05);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.single-gate-control:disabled,
+#resetQubitButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    transform: none;
+}
+
+@media (max-width: 700px) {
+    .initial-state-grid {
+        grid-template-columns: 1fr;
+    }
+}
