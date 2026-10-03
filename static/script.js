@@ -3589,9 +3589,14 @@ function initOperatorLab() {
 
 document.addEventListener("DOMContentLoaded", () => {
     addOperatorLabNav();
+    addChallengeNav();
 
     if (document.getElementById("operatorInputSphere")) {
         initOperatorLab();
+    }
+
+    if (document.getElementById("combinedBlochSphere")) {
+        initChallengeLab();
     }
 
     if (document.getElementById("initialReal0")) {
@@ -3602,3 +3607,710 @@ document.addEventListener("DOMContentLoaded", () => {
         updateInitialVectorPreview();
     }
 });
+
+
+/* =====================================================
+   QUANTUM STATE CHALLENGE ENGINE (FRONTEND)
+===================================================== */
+
+let challengeStateData = null;
+let challengeStepHistory = [];
+let challengeViewMode = "combined"; // 'combined' or 'dual'
+let activePresetId = "level_1";
+let hasShownVictoryForCurrentState = false;
+
+function addChallengeNav() {
+    const nav = document.querySelector(".sidebar nav");
+    if (!nav || nav.querySelector('a[href="/challenge"]')) return;
+
+    const link = document.createElement("a");
+    link.href = "/challenge";
+    link.className = "nav-item challenge-nav-item";
+    if (window.location.pathname === "/challenge" || window.location.pathname === "/game") {
+        link.classList.add("active");
+    }
+    link.innerHTML = "<span>🎯</span> Quantum State Challenge";
+
+    const divider = nav.querySelector(".nav-divider");
+    if (divider) nav.insertBefore(link, divider);
+    else nav.appendChild(link);
+}
+
+function challengeSphereLayout(title) {
+    return {
+        margin: { l: 0, r: 0, t: 28, b: 0 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        scene: {
+            xaxis: {
+                title: "X",
+                range: [-1.25, 1.25],
+                zeroline: true,
+                showgrid: true,
+                gridcolor: "rgba(255,255,255,0.08)",
+                color: "#8e96b3"
+            },
+            yaxis: {
+                title: "Y",
+                range: [-1.25, 1.25],
+                zeroline: true,
+                showgrid: true,
+                gridcolor: "rgba(255,255,255,0.08)",
+                color: "#8e96b3"
+            },
+            zaxis: {
+                title: "Z",
+                range: [-1.25, 1.25],
+                zeroline: true,
+                showgrid: true,
+                gridcolor: "rgba(255,255,255,0.08)",
+                color: "#8e96b3"
+            },
+            aspectmode: "cube"
+        },
+        showlegend: false,
+        title: { text: title, font: { size: 12, color: "#d1d5db" } }
+    };
+}
+
+function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, title) {
+    const sphere = document.getElementById(elementId);
+    if (!sphere || !window.Plotly) return;
+
+    const theta = Array.from({ length: 36 }, (_, i) => Math.PI * i / 35);
+    const phi = Array.from({ length: 36 }, (_, i) => 2 * Math.PI * i / 35);
+
+    const sphereX = [];
+    const sphereY = [];
+    const sphereZ = [];
+
+    theta.forEach(t => {
+        const rowX = [];
+        const rowY = [];
+        const rowZ = [];
+        phi.forEach(p => {
+            rowX.push(Math.sin(t) * Math.cos(p));
+            rowY.push(Math.sin(t) * Math.sin(p));
+            rowZ.push(Math.cos(t));
+        });
+        sphereX.push(rowX);
+        sphereY.push(rowY);
+        sphereZ.push(rowZ);
+    });
+
+    const surface = {
+        x: sphereX,
+        y: sphereY,
+        z: sphereZ,
+        type: "surface",
+        opacity: 0.12,
+        colorscale: [
+            [0, "rgb(30, 41, 75)"],
+            [1, "rgb(78, 156, 255)"]
+        ],
+        showscale: false,
+        hoverinfo: "skip"
+    };
+
+    const traces = [surface];
+
+    // Target State Vector (Gold/Amber)
+    if (targetCoords) {
+        const tx = Number(targetCoords.x);
+        const ty = Number(targetCoords.y);
+        const tz = Number(targetCoords.z);
+
+        traces.push({
+            x: [0, tx],
+            y: [0, ty],
+            z: [0, tz],
+            type: "scatter3d",
+            mode: "lines",
+            line: { color: "#ffb84d", width: 6, dash: "dot" },
+            name: "Target State",
+            hoverinfo: "skip"
+        });
+
+        traces.push({
+            type: "cone",
+            x: [tx],
+            y: [ty],
+            z: [tz],
+            u: [tx],
+            v: [ty],
+            w: [tz],
+            anchor: "tip",
+            sizemode: "absolute",
+            sizeref: 0.15,
+            colorscale: [[0, "#ffb84d"], [1, "#ffb84d"]],
+            showscale: false,
+            hoverinfo: "skip"
+        });
+
+        traces.push({
+            x: [tx],
+            y: [ty],
+            z: [tz],
+            type: "scatter3d",
+            mode: "markers",
+            marker: { size: 7, color: "#ffb84d" },
+            name: "Target State",
+            hovertemplate: "Target: x=%{x:.3f}, y=%{y:.3f}, z=%{z:.3f}<extra></extra>"
+        });
+    }
+
+    // Current State Vector (Vibrant Cyan)
+    if (currentCoords) {
+        const cx = Number(currentCoords.x);
+        const cy = Number(currentCoords.y);
+        const cz = Number(currentCoords.z);
+
+        traces.push({
+            x: [0, cx],
+            y: [0, cy],
+            z: [0, cz],
+            type: "scatter3d",
+            mode: "lines",
+            line: { color: "#00e5ff", width: 7 },
+            name: "Current State",
+            hoverinfo: "skip"
+        });
+
+        traces.push({
+            type: "cone",
+            x: [cx],
+            y: [cy],
+            z: [cz],
+            u: [cx],
+            v: [cy],
+            w: [cz],
+            anchor: "tip",
+            sizemode: "absolute",
+            sizeref: 0.16,
+            colorscale: [[0, "#00e5ff"], [1, "#00e5ff"]],
+            showscale: false,
+            hoverinfo: "skip"
+        });
+
+        traces.push({
+            x: [cx],
+            y: [cy],
+            z: [cz],
+            type: "scatter3d",
+            mode: "markers",
+            marker: { size: 8, color: "#00e5ff" },
+            name: "Current State",
+            hovertemplate: "Current: x=%{x:.3f}, y=%{y:.3f}, z=%{z:.3f}<extra></extra>"
+        });
+    }
+
+    Plotly.react(
+        sphere,
+        traces,
+        challengeSphereLayout(title),
+        { responsive: true, displayModeBar: false }
+    );
+}
+
+function updateChallengeUI(data) {
+    if (!data) return;
+    challengeStateData = data;
+
+    const evaluation = data.evaluation || {};
+    const currPayload = data.current_payload || {};
+    const tgtPayload = data.target_payload || {};
+    const initPayload = data.initial_payload || {};
+
+    // 1. Header & badges
+    const titleEl = document.getElementById("challengeTitle");
+    if (titleEl) titleEl.textContent = data.name || "Quantum State Challenge";
+
+    const diffBadge = document.getElementById("challengeDifficultyBadge");
+    if (diffBadge) diffBadge.textContent = data.difficulty || "Medium";
+
+    const parBadge = document.getElementById("parStepsBadge");
+    if (parBadge) {
+        parBadge.textContent = `Par: ${data.optimal_steps} step${data.optimal_steps === 1 ? '' : 's'}`;
+    }
+
+    const descEl = document.getElementById("challengeDescriptionText");
+    if (descEl) descEl.textContent = data.description || "";
+
+    // 2. Scorecard Metrics
+    const moves = Number(data.moves_taken || 0);
+    const par = Number(data.optimal_steps || 1);
+
+    const movesEl = document.getElementById("metricCurrentMoves");
+    if (movesEl) movesEl.textContent = moves;
+
+    const diffEl = document.getElementById("metricMoveDifference");
+    if (diffEl) {
+        if (moves === 0) {
+            diffEl.textContent = `Target: least steps (Par ${par})`;
+            diffEl.style.color = "var(--muted)";
+        } else if (moves === par) {
+            diffEl.textContent = "At Par (Optimal pace!)";
+            diffEl.style.color = "#42d6a4";
+        } else if (moves < par) {
+            diffEl.textContent = `${par - moves} move(s) remaining for par`;
+            diffEl.style.color = "#4e9cff";
+        } else {
+            diffEl.textContent = `+${moves - par} over par`;
+            diffEl.style.color = "#ff9c5a";
+        }
+    }
+
+    const parEl = document.getElementById("metricOptimalMoves");
+    if (parEl) parEl.textContent = par;
+
+    const fid = Number(evaluation.fidelity ?? 0);
+    const fidPct = (fid * 100).toFixed(1);
+    const fidEl = document.getElementById("metricFidelity");
+    if (fidEl) fidEl.textContent = `${fidPct}%`;
+
+    const barEl = document.getElementById("fidelityProgressBar");
+    if (barEl) {
+        barEl.style.width = `${Math.min(100, Math.max(0, fid * 100))}%`;
+        barEl.style.background = fid >= 0.999 ? "#42d6a4" : (fid > 0.5 ? "#4e9cff" : "#9b6cff");
+    }
+
+    const angle = Number(evaluation.angle_degrees ?? 0);
+    const angleEl = document.getElementById("metricBlochAngle");
+    if (angleEl) {
+        angleEl.textContent = evaluation.target_reached ? "0.0° (Aligned!)" : `${angle.toFixed(1)}°`;
+        angleEl.style.color = evaluation.target_reached ? "#42d6a4" : "#fff";
+    }
+
+    const distEl = document.getElementById("metricBlochDistance");
+    if (distEl) {
+        distEl.textContent = `Bloch Distance: ${Number(evaluation.bloch_distance ?? 0).toFixed(3)}`;
+    }
+
+    // 3. State Equation Ket values
+    const initKetEl = document.getElementById("initialKetDisplay");
+    if (initKetEl) initKetEl.textContent = initPayload.ket || "|0⟩";
+
+    const currKetEl = document.getElementById("currentKetDisplay");
+    if (currKetEl) currKetEl.textContent = currPayload.ket || "|0⟩";
+
+    const tgtKetEl = document.getElementById("targetKetDisplay");
+    if (tgtKetEl) tgtKetEl.textContent = tgtPayload.ket || "|1⟩";
+
+    // 4. Coordinates
+    const currCoords = currPayload.bloch_coordinates || { x: 0, y: 0, z: 1 };
+    const tgtCoords = tgtPayload.bloch_coordinates || { x: 0, y: 0, z: -1 };
+
+    const cX = document.getElementById("currX");
+    const cY = document.getElementById("currY");
+    const cZ = document.getElementById("currZ");
+    if (cX) cX.textContent = Number(currCoords.x).toFixed(2);
+    if (cY) cY.textContent = Number(currCoords.y).toFixed(2);
+    if (cZ) cZ.textContent = Number(currCoords.z).toFixed(2);
+
+    const tX = document.getElementById("tgtX");
+    const tY = document.getElementById("tgtY");
+    const tZ = document.getElementById("tgtZ");
+    if (tX) tX.textContent = Number(tgtCoords.x).toFixed(2);
+    if (tY) tY.textContent = Number(tgtCoords.y).toFixed(2);
+    if (tZ) tZ.textContent = Number(tgtCoords.z).toFixed(2);
+
+    // 5. Render 3D Spheres
+    renderChallengeBlochSphere("combinedBlochSphere", currCoords, tgtCoords, "Current State (Cyan) vs Target State (Amber)");
+    renderChallengeBlochSphere("currentBlochSphere", currCoords, null, "Current State");
+    renderChallengeBlochSphere("targetBlochSphere", null, tgtCoords, "Target State");
+
+    // 6. Circuit Wire Display
+    const wireGates = document.getElementById("challengeWireGates");
+    const history = data.gate_history || [];
+    if (wireGates) {
+        if (history.length === 0) {
+            wireGates.innerHTML = '<span class="empty-circuit">No gates applied yet. Choose a gate above to begin!</span>';
+        } else {
+            wireGates.innerHTML = history.map((gate, i) => `
+                <div class="circuit-gate-item">
+                    <strong>${gate}</strong>
+                    <small>Step ${i + 1}</small>
+                </div>
+            `).join("");
+        }
+    }
+
+    const badgeStepCount = document.getElementById("circuitStepCountBadge");
+    if (badgeStepCount) {
+        badgeStepCount.textContent = `${history.length} gate${history.length === 1 ? '' : 's'} executed`;
+    }
+
+    // 7. Update History Table
+    updateChallengeHistoryTable(history, currPayload.ket, fidPct, angle);
+
+    // 8. MathJax typeset if available
+    if (window.MathJax?.typesetPromise) {
+        MathJax.typesetPromise();
+    }
+
+    // 9. Check Victory Condition
+    if (evaluation.target_reached) {
+        if (!hasShownVictoryForCurrentState) {
+            hasShownVictoryForCurrentState = true;
+            showVictoryModal(data);
+        }
+    } else {
+        hasShownVictoryForCurrentState = false;
+    }
+}
+
+function updateChallengeHistoryTable(history, latestKet, fidPct, angleDeg) {
+    const tbody = document.getElementById("challengeHistoryTableBody");
+    if (!tbody) return;
+
+    if (!history || history.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Initial state ready. Apply your first gate.</td></tr>';
+        challengeStepHistory = [];
+        return;
+    }
+
+    // If step history is shorter than history length, add new step
+    if (challengeStepHistory.length < history.length) {
+        const stepNum = history.length;
+        const gate = history[history.length - 1];
+        challengeStepHistory.push({
+            step: stepNum,
+            gate: gate,
+            ket: latestKet,
+            fidelity: `${fidPct}%`,
+            angle: `${angleDeg.toFixed(1)}°`
+        });
+    } else if (challengeStepHistory.length > history.length) {
+        challengeStepHistory = challengeStepHistory.slice(0, history.length);
+    }
+
+    tbody.innerHTML = challengeStepHistory.map(row => `
+        <tr>
+            <td><strong>#${row.step}</strong></td>
+            <td><span class="operator-badge neutral" style="font-weight:700;">${row.gate}</span></td>
+            <td><code>${row.ket}</code></td>
+            <td>${row.fidelity}</td>
+            <td>${row.angle}</td>
+        </tr>
+    `).join("");
+}
+
+function showVictoryModal(data) {
+    const modal = document.getElementById("victoryModal");
+    if (!modal) return;
+
+    const evaluation = data.evaluation || {};
+    const moves = Number(data.moves_taken || 0);
+    const optimal = Number(data.optimal_steps || 1);
+
+    const starsEl = document.getElementById("victoryStars");
+    const titleEl = document.getElementById("victoryTitle");
+    const subEl = document.getElementById("victorySubtitle");
+    const userMovesEl = document.getElementById("victoryUserMoves");
+    const optMovesEl = document.getElementById("victoryOptimalMoves");
+    const effEl = document.getElementById("victoryEfficiency");
+    const expEl = document.getElementById("victoryExplanation");
+
+    if (userMovesEl) userMovesEl.textContent = moves;
+    if (optMovesEl) optMovesEl.textContent = optimal;
+
+    const eff = Math.min(100, Math.round((optimal / Math.max(1, moves)) * 100));
+    if (effEl) effEl.textContent = `${eff}%`;
+
+    if (moves === optimal) {
+        if (starsEl) starsEl.textContent = "⭐⭐⭐";
+        if (titleEl) titleEl.textContent = "FLAWLESS! LEAST STEPS ACHIEVED!";
+        if (subEl) subEl.textContent = `Masterful! You reached the target state in the exact minimum of ${optimal} step${optimal === 1 ? '' : 's'}.`;
+    } else if (moves <= optimal + 2) {
+        if (starsEl) starsEl.textContent = "⭐⭐";
+        if (titleEl) titleEl.textContent = "GREAT JOB! TARGET REACHED!";
+        if (subEl) subEl.textContent = `Completed in ${moves} moves (Par is ${optimal} steps). Try solving it in fewer steps!`;
+    } else {
+        if (starsEl) starsEl.textContent = "⭐";
+        if (titleEl) titleEl.textContent = "TARGET REACHED!";
+        if (subEl) subEl.textContent = `You reached the target in ${moves} moves, but it can be done in only ${optimal} step${optimal === 1 ? '' : 's'}.`;
+    }
+
+    if (expEl) {
+        expEl.textContent = data.concept ||
+            `The applied quantum gate sequence rotates the state vector along the Bloch sphere into exact alignment with the target state.`;
+    }
+
+    modal.style.display = "flex";
+}
+
+function closeVictoryModal() {
+    const modal = document.getElementById("victoryModal");
+    if (modal) modal.style.display = "none";
+}
+
+async function applyChallengeGate(gateName) {
+    hideHintBox();
+    try {
+        const response = await fetch("/api/challenge/apply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ gate: gateName })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Failed to apply gate.");
+        }
+        updateChallengeUI(data);
+    } catch (err) {
+        console.error(err);
+        alert(`Gate Error: ${err.message}`);
+    }
+}
+
+async function undoChallengeGate() {
+    hideHintBox();
+    try {
+        const response = await fetch("/api/challenge/undo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Undo failed.");
+        }
+        updateChallengeUI(data);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function resetChallengeState() {
+    hideHintBox();
+    try {
+        const response = await fetch("/api/challenge/reset", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Reset failed.");
+        }
+        challengeStepHistory = [];
+        hasShownVictoryForCurrentState = false;
+        updateChallengeUI(data);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function getChallengeHint() {
+    try {
+        const response = await fetch("/api/challenge/hint", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Hint unavailable.");
+        }
+        showHintBox(data.message);
+    } catch (err) {
+        console.error(err);
+        alert(`Hint Error: ${err.message}`);
+    }
+}
+
+async function revealOptimalSolution() {
+    try {
+        const response = await fetch("/api/challenge/solve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Solution unavailable.");
+        }
+        const optSeq = data.optimal_sequence ? data.optimal_sequence.join(" ➔ ") : "Unknown";
+        const remSeq = data.remaining_sequence ? data.remaining_sequence.join(" ➔ ") : "None";
+        showHintBox(`Optimal sequence from start (${data.optimal_steps} steps): [ ${optSeq} ]. From current state (${data.remaining_steps} steps): [ ${remSeq} ].`);
+    } catch (err) {
+        console.error(err);
+        alert(`Solve Error: ${err.message}`);
+    }
+}
+
+function showHintBox(msg) {
+    const box = document.getElementById("challengeHintBox");
+    const text = document.getElementById("challengeHintText");
+    if (box && text) {
+        text.textContent = msg;
+        box.style.display = "flex";
+    }
+}
+
+function hideHintBox() {
+    const box = document.getElementById("challengeHintBox");
+    if (box) box.style.display = "none";
+}
+
+async function loadChallengePreset(presetId) {
+    hideHintBox();
+    closeVictoryModal();
+    activePresetId = presetId;
+
+    // Highlight active preset pill
+    document.querySelectorAll(".preset-pill").forEach(pill => {
+        pill.classList.remove("active");
+        if (pill.getAttribute("onclick")?.includes(presetId)) {
+            pill.classList.add("active");
+        }
+    });
+
+    try {
+        const response = await fetch("/api/challenge/new", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ preset_id: presetId })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Failed to load preset.");
+        }
+        challengeStepHistory = [];
+        hasShownVictoryForCurrentState = false;
+        updateChallengeUI(data);
+    } catch (err) {
+        console.error(err);
+        alert(`Preset Error: ${err.message}`);
+    }
+}
+
+async function generateNewRandomChallenge(difficulty) {
+    hideHintBox();
+    closeVictoryModal();
+    document.querySelectorAll(".preset-pill").forEach(pill => pill.classList.remove("active"));
+
+    try {
+        const response = await fetch("/api/challenge/new", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ difficulty: difficulty })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Failed to generate random challenge.");
+        }
+        challengeStepHistory = [];
+        hasShownVictoryForCurrentState = false;
+        updateChallengeUI(data);
+    } catch (err) {
+        console.error(err);
+        alert(`Generator Error: ${err.message}`);
+    }
+}
+
+function nextLevelOrRandom() {
+    closeVictoryModal();
+    // Advance to next level if on a preset
+    const match = activePresetId.match(/level_(\d+)/);
+    if (match) {
+        const nextNum = parseInt(match[1], 10) + 1;
+        if (nextNum <= 10) {
+            loadChallengePreset(`level_${nextNum}`);
+            return;
+        }
+    }
+    generateNewRandomChallenge("medium");
+}
+
+function toggleSphereView() {
+    const combined = document.getElementById("combinedSphereContainer");
+    const dual = document.getElementById("dualSphereContainer");
+    const btn = document.getElementById("viewToggleBtn");
+
+    if (challengeViewMode === "combined") {
+        challengeViewMode = "dual";
+        if (combined) combined.style.display = "none";
+        if (dual) dual.style.display = "grid";
+        if (btn) btn.textContent = "🔄 Switch to Single Sphere";
+    } else {
+        challengeViewMode = "combined";
+        if (combined) combined.style.display = "block";
+        if (dual) dual.style.display = "none";
+        if (btn) btn.textContent = "🔄 Switch to Dual Spheres";
+    }
+
+    if (challengeStateData) {
+        const currCoords = challengeStateData.current_payload?.bloch_coordinates;
+        const tgtCoords = challengeStateData.target_payload?.bloch_coordinates;
+        if (challengeViewMode === "combined") {
+            renderChallengeBlochSphere("combinedBlochSphere", currCoords, tgtCoords, "Current State (Cyan) vs Target State (Amber)");
+        } else {
+            renderChallengeBlochSphere("currentBlochSphere", currCoords, null, "Current State");
+            renderChallengeBlochSphere("targetBlochSphere", null, tgtCoords, "Target State");
+        }
+    }
+}
+
+function toggleCustomModal() {
+    const modal = document.getElementById("customChallengeModal");
+    if (!modal) return;
+    modal.style.display = modal.style.display === "flex" ? "none" : "flex";
+}
+
+async function submitCustomChallenge() {
+    const r0 = parseFloat(document.getElementById("customInitRe0")?.value || 0);
+    const i0 = parseFloat(document.getElementById("customInitIm0")?.value || 0);
+    const r1 = parseFloat(document.getElementById("customInitRe1")?.value || 0);
+    const i1 = parseFloat(document.getElementById("customInitIm1")?.value || 0);
+
+    const tr0 = parseFloat(document.getElementById("customTgtRe0")?.value || 0);
+    const ti0 = parseFloat(document.getElementById("customTgtIm0")?.value || 0);
+    const tr1 = parseFloat(document.getElementById("customTgtRe1")?.value || 0);
+    const ti1 = parseFloat(document.getElementById("customTgtIm1")?.value || 0);
+
+    if (isNaN(r0) || isNaN(i0) || isNaN(r1) || isNaN(i1) || (r0 === 0 && i0 === 0 && r1 === 0 && i1 === 0)) {
+        alert("Please enter a valid non-zero initial state vector.");
+        return;
+    }
+
+    if (isNaN(tr0) || isNaN(ti0) || isNaN(tr1) || isNaN(ti1) || (tr0 === 0 && ti0 === 0 && tr1 === 0 && ti1 === 0)) {
+        alert("Please enter a valid non-zero target state vector.");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/challenge/custom", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                initial: [{ real: r0, imaginary: i0 }, { real: r1, imaginary: i1 }],
+                target: [{ real: tr0, imaginary: ti0 }, { real: tr1, imaginary: ti1 }]
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Custom challenge could not be generated.");
+        }
+
+        toggleCustomModal();
+        challengeStepHistory = [];
+        hasShownVictoryForCurrentState = false;
+        document.querySelectorAll(".preset-pill").forEach(p => p.classList.remove("active"));
+        updateChallengeUI(data);
+    } catch (err) {
+        console.error(err);
+        alert(`Custom Error: ${err.message}`);
+    }
+}
+
+async function initChallengeLab() {
+    addChallengeNav();
+    try {
+        const response = await fetch("/api/challenge/current");
+        const data = await response.json();
+        if (response.ok && data.success) {
+            updateChallengeUI(data);
+        }
+    } catch (err) {
+        console.error("Failed to load initial challenge state:", err);
+    }
+}
+
