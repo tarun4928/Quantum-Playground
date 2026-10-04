@@ -1,439 +1,399 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum State Challenge | Quantum Playground</title>
+{% extends "base.html" %}
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+{% block title %}Quantum State Challenge | Quantum Playground{% endblock %}
 
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['\\(', '\\)']],
-                displayMath: [['\\[', '\\]']]
-            },
-            options: {
-                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-            }
-        };
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-</head>
+{% block head %}
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
-<body>
-<div class="app-container">
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)']],
+            displayMath: [['\\[', '\\]']]
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="logo">
-            <div class="logo-icon">⚛</div>
-            <div>
-                <h2>Quantum</h2>
-                <span>Playground</span>
-            </div>
-        </div>
+{% block main_class %}challenge-main{% endblock %}
 
-        <nav>
-            <a href="/" class="nav-item"><span>⌂</span> Home</a>
-            <a href="/explore" class="nav-item"><span>◉</span> Explore</a>
-            <a href="/circuit" class="nav-item"><span>⚡</span> Circuit Lab</a>
-            <a href="/measurement" class="nav-item"><span>▣</span> Measurement Lab</a>
-            <a href="/entanglement" class="nav-item"><span>∞</span> Entanglement Lab</a>
-            <a href="/operator" class="nav-item"><span>λ</span> Define Your Own Quantum Gate</a>
-            <a href="/challenge" class="nav-item active challenge-nav-item"><span>🎯</span> Quantum State Challenge</a>
-            <div class="nav-divider"></div>
-            <a href="/learn" class="nav-item"><span>📖</span> Learn</a>
-            <a href="/about" class="nav-item"><span>ⓘ</span> About</a>
-            <a href="/help" class="nav-item"><span>?</span> Help</a>
-        </nav>
+{% block content %}
 
-        <div class="sidebar-bottom">
-            <span class="status-dot"></span>
-            Quantum Engine Ready
-        </div>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <main class="main-content challenge-main">
-
-        <!-- PAGE HEADING -->
-        <div class="page-heading">
-            <p class="section-label">CHALLENGE LAB</p>
-            <h1>Quantum State Challenge</h1>
-            <p>
-                Navigate from the initial qubit state to the target final state in the <strong>least amount of steps</strong>.
-                Apply quantum gates, track your trajectory on the 3D Bloch sphere, and master optimal state transformations.
-            </p>
-        </div>
-
-        <!-- =========================================
-             SECTION 1: CHALLENGE SELECTION & PRESETS
-        ========================================== -->
-        <section class="panel challenge-control-panel">
-            <div class="panel-title">
-                <div>
-                    <span class="panel-number">01</span>
-                    <h2 id="challengeTitle">Loading Challenge...</h2>
-                </div>
-                <div class="challenge-badge-row">
-                    <span id="challengeDifficultyBadge" class="operator-badge neutral">Easy</span>
-                    <span id="parStepsBadge" class="operator-badge highlight">Par: — steps</span>
-                </div>
-            </div>
-
-            <!-- LEVEL PRESET PILLS -->
-            <div class="preset-section">
-                <span class="preset-label">Levels:</span>
-                <div class="preset-pill-grid">
-                    <button class="preset-pill active" onclick="loadChallengePreset('level_1')">1. Bit Flip</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_2')">2. Bridge (H)</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_3')">3. Phase Flip</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_4')">4. Return</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_5')">5. Y-Axis</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_6')">6. Magic T</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_7')">7. Equator</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_8')">8. Conjugate</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_9')">9. Master</button>
-                    <button class="preset-pill" onclick="loadChallengePreset('level_10')">10. Grand</button>
-                </div>
-            </div>
-
-            <!-- RANDOM GENERATOR & CUSTOM ACTION ROW -->
-            <div class="challenge-actions-toolbar">
-                <div class="generator-group">
-                    <span class="toolbar-label">Generate Random Challenge:</span>
-                    <button class="secondary-btn small-btn" onclick="generateNewRandomChallenge('easy')">🎲 Easy (1-2 moves)</button>
-                    <button class="secondary-btn small-btn" onclick="generateNewRandomChallenge('medium')">🎲 Medium (3-4 moves)</button>
-                    <button class="secondary-btn small-btn" onclick="generateNewRandomChallenge('hard')">🎲 Hard (5-6 moves)</button>
-                </div>
-
-                <div class="toolbar-divider"></div>
-
-                <div class="view-group">
-                    <button class="secondary-btn small-btn" id="customChallengeBtn" onclick="toggleCustomModal()">✏ Custom Target</button>
-                    <button class="secondary-btn small-btn" id="viewToggleBtn" onclick="toggleSphereView()">🔄 Dual / Single Sphere</button>
-                </div>
-            </div>
-
-            <p id="challengeDescriptionText" class="challenge-description-box">
-                Loading description...
-            </p>
-        </section>
-
-        <!-- =========================================
-             SECTION 2: LIVE SCORECARD & METRICS
-        ========================================== -->
-        <section class="challenge-metrics-grid">
-            <div class="metric-card">
-                <span class="metric-label">CURRENT MOVES</span>
-                <strong id="metricCurrentMoves" class="metric-value">0</strong>
-                <small id="metricMoveDifference" class="metric-sub">Target: least steps</small>
-            </div>
-
-            <div class="metric-card">
-                <span class="metric-label">OPTIMAL (PAR)</span>
-                <strong id="metricOptimalMoves" class="metric-value">—</strong>
-                <small class="metric-sub">Theoretical shortest path</small>
-            </div>
-
-            <div class="metric-card">
-                <span class="metric-label">FIDELITY TO TARGET</span>
-                <strong id="metricFidelity" class="metric-value">0.0%</strong>
-                <div class="progress mini-progress">
-                    <div id="fidelityProgressBar" class="progress-fill" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <div class="metric-card">
-                <span class="metric-label">BLOCH SEPARATION</span>
-                <strong id="metricBlochAngle" class="metric-value">—°</strong>
-                <small id="metricBlochDistance" class="metric-sub">Distance: —</small>
-            </div>
-        </section>
-
-        <!-- =========================================
-             SECTION 3: 3D BLOCH SPHERES (PLOTLY)
-        ========================================== -->
-        <section class="panel challenge-visualizer-panel">
-            <div class="panel-title">
-                <div>
-                    <span class="panel-number">02</span>
-                    <h2>Bloch Sphere Trajectory</h2>
-                </div>
-                <div class="legend-indicator-row">
-                    <span class="legend-chip current-chip"><span class="chip-dot current-dot"></span> Current State</span>
-                    <span class="legend-chip target-chip"><span class="chip-dot target-dot"></span> Target State</span>
-                </div>
-            </div>
-
-            <!-- SINGLE COMBINED VIEW -->
-            <div id="combinedSphereContainer" class="sphere-display-area">
-                <div id="combinedBlochSphere" class="challenge-sphere-3d"></div>
-            </div>
-
-            <!-- DUAL SIDE-BY-SIDE VIEW (TOGGLEABLE) -->
-            <div id="dualSphereContainer" class="sphere-display-area dual-view" style="display: none;">
-                <div class="dual-sphere-box">
-                    <h3 class="dual-sphere-title">Current State \(|\psi_{\text{curr}}\rangle\)</h3>
-                    <div id="currentBlochSphere" class="challenge-sphere-3d dual"></div>
-                    <div class="coord-tag-row">
-                        <span>X: <b id="currX">0.00</b></span>
-                        <span>Y: <b id="currY">0.00</b></span>
-                        <span>Z: <b id="currZ">1.00</b></span>
-                    </div>
-                </div>
-
-                <div class="dual-sphere-box">
-                    <h3 class="dual-sphere-title">Target State \(|\psi_{\text{target}}\rangle\)</h3>
-                    <div id="targetBlochSphere" class="challenge-sphere-3d dual"></div>
-                    <div class="coord-tag-row">
-                        <span>X: <b id="tgtX">0.00</b></span>
-                        <span>Y: <b id="tgtY">0.00</b></span>
-                        <span>Z: <b id="tgtZ">0.00</b></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="state-equation-row">
-                <div class="state-eq-card">
-                    <span class="eq-label">INITIAL STATE</span>
-                    <div id="initialKetDisplay" class="ket-value">|0⟩</div>
-                </div>
-                <div class="state-eq-arrow">➔</div>
-                <div class="state-eq-card active">
-                    <span class="eq-label">CURRENT STATE</span>
-                    <div id="currentKetDisplay" class="ket-value">|0⟩</div>
-                </div>
-                <div class="state-eq-arrow">➔</div>
-                <div class="state-eq-card target">
-                    <span class="eq-label">TARGET FINAL STATE</span>
-                    <div id="targetKetDisplay" class="ket-value">|1⟩</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- =========================================
-             SECTION 4: QUANTUM GATE CONTROLS
-        ========================================== -->
-        <section class="panel challenge-gate-panel">
-            <div class="panel-title">
-                <div>
-                    <span class="panel-number">03</span>
-                    <h2>Apply Quantum Gates</h2>
-                </div>
-                <span class="panel-subtitle">Click any gate to transform the qubit</span>
-            </div>
-
-            <div class="gate-grid challenge-gates">
-                <button class="gate-btn" onclick="applyChallengeGate('X')">
-                    <strong>X</strong>
-                    <small>Pauli-X (180° X)</small>
-                </button>
-
-                <button class="gate-btn" onclick="applyChallengeGate('Y')">
-                    <strong>Y</strong>
-                    <small>Pauli-Y (180° Y)</small>
-                </button>
-
-                <button class="gate-btn" onclick="applyChallengeGate('Z')">
-                    <strong>Z</strong>
-                    <small>Pauli-Z (180° Z)</small>
-                </button>
-
-                <button class="gate-btn" onclick="applyChallengeGate('H')">
-                    <strong>H</strong>
-                    <small>Hadamard (X ↔ Z)</small>
-                </button>
-
-                <button class="gate-btn" onclick="applyChallengeGate('S')">
-                    <strong>S</strong>
-                    <small>Phase (90° Z)</small>
-                </button>
-
-                <button class="gate-btn" onclick="applyChallengeGate('T')">
-                    <strong>T</strong>
-                    <small>Phase (45° Z)</small>
-                </button>
-            </div>
-
-            <!-- ACTION CONTROL BUTTONS -->
-            <div class="challenge-control-buttons">
-                <button class="secondary-btn" onclick="undoChallengeGate()" id="undoBtn">
-                    ↶ Undo Move
-                </button>
-
-                <button class="secondary-btn" onclick="resetChallengeState()">
-                    ↺ Reset to Initial
-                </button>
-
-                <button class="primary-btn" onclick="getChallengeHint()">
-                    💡 Get Hint
-                </button>
-
-                <button class="secondary-btn solve-btn" onclick="revealOptimalSolution()">
-                    ⚡ Show Optimal Path
-                </button>
-            </div>
-
-            <!-- HINT / ADVICE DISPLAY BANNER -->
-            <div id="challengeHintBox" class="hint-alert-box" style="display: none;">
-                <div class="hint-icon">💡</div>
-                <div class="hint-text" id="challengeHintText">Hint will appear here.</div>
-            </div>
-        </section>
-
-        <!-- =========================================
-             SECTION 5: CIRCUIT WIRE & HISTORY
-        ========================================== -->
-        <section class="panel challenge-wire-panel">
-            <div class="panel-title">
-                <div>
-                    <span class="panel-number">04</span>
-                    <h2>Applied Quantum Circuit Wire</h2>
-                </div>
-                <span id="circuitStepCountBadge" class="operator-badge neutral">0 gates executed</span>
-            </div>
-
-            <div class="circuit-board challenge-board">
-                <div class="wire">
-                    <span class="qubit-label">q₀</span>
-                    <div id="challengeWireGates" class="circuit-gates">
-                        <span class="empty-circuit">No gates applied yet. Choose a gate above to begin!</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- STEP HISTORY TABLE -->
-            <div class="history-table-container">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Step</th>
-                            <th>Gate Applied</th>
-                            <th>Resulting Ket</th>
-                            <th>Fidelity to Target</th>
-                            <th>Angular Distance</th>
-                        </tr>
-                    </thead>
-                    <tbody id="challengeHistoryTableBody">
-                        <tr>
-                            <td colspan="5" class="table-empty">Initial state ready. Apply your first gate.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- =========================================
-             VICTORY / COMPLETION MODAL
-        ========================================== -->
-        <div id="victoryModal" class="modal-overlay" style="display: none;">
-            <div class="modal-card victory-card">
-                <div class="victory-header">
-                    <div class="victory-trophy">🏆</div>
-                    <div id="victoryStars" class="victory-stars">⭐⭐⭐</div>
-                    <h2 id="victoryTitle">Target Reached!</h2>
-                    <p id="victorySubtitle">You have transformed the qubit to the final state.</p>
-                </div>
-
-                <div class="victory-stats-box">
-                    <div class="v-stat">
-                        <span>Your Moves:</span>
-                        <strong id="victoryUserMoves">0</strong>
-                    </div>
-                    <div class="v-stat">
-                        <span>Par (Optimal):</span>
-                        <strong id="victoryOptimalMoves">0</strong>
-                    </div>
-                    <div class="v-stat">
-                        <span>Efficiency:</span>
-                        <strong id="victoryEfficiency">100%</strong>
-                    </div>
-                </div>
-
-                <div id="victoryExplanation" class="victory-explanation">
-                    Physics concept explanation appears here.
-                </div>
-
-                <div class="modal-btn-row">
-                    <button class="secondary-btn" onclick="closeVictoryModal()">Review Circuit</button>
-                    <button class="primary-btn" onclick="nextLevelOrRandom()">Next Challenge ➔</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- =========================================
-             CUSTOM STATE CREATOR MODAL
-        ========================================== -->
-        <div id="customChallengeModal" class="modal-overlay" style="display: none;">
-            <div class="modal-card">
-                <div class="modal-header">
-                    <h2>Define Custom Target Challenge</h2>
-                    <button class="close-modal-btn" onclick="toggleCustomModal()">✕</button>
-                </div>
-
-                <div class="modal-body">
-                    <p class="modal-help-text">
-                        Choose or enter starting and target states. The engine will determine if a gate path exists and calculate the exact minimum number of steps!
-                    </p>
-
-                    <div class="custom-vector-group">
-                        <h3>Initial State \(|\psi_{\text{init}}\rangle\)</h3>
-                        <div class="custom-input-row">
-                            <div>
-                                <label>Re(α)</label>
-                                <input type="number" step="any" id="customInitRe0" value="1" placeholder="1">
-                            </div>
-                            <div>
-                                <label>Im(α)</label>
-                                <input type="number" step="any" id="customInitIm0" value="0" placeholder="0">
-                            </div>
-                            <div>
-                                <label>Re(β)</label>
-                                <input type="number" step="any" id="customInitRe1" value="0" placeholder="0">
-                            </div>
-                            <div>
-                                <label>Im(β)</label>
-                                <input type="number" step="any" id="customInitIm1" value="0" placeholder="0">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="custom-vector-group">
-                        <h3>Target State \(|\psi_{\text{target}}\rangle\)</h3>
-                        <div class="custom-input-row">
-                            <div>
-                                <label>Re(α)</label>
-                                <input type="number" step="any" id="customTgtRe0" value="0" placeholder="0">
-                            </div>
-                            <div>
-                                <label>Im(α)</label>
-                                <input type="number" step="any" id="customTgtIm0" value="0" placeholder="0">
-                            </div>
-                            <div>
-                                <label>Re(β)</label>
-                                <input type="number" step="any" id="customTgtRe1" value="1" placeholder="1">
-                            </div>
-                            <div>
-                                <label>Im(β)</label>
-                                <input type="number" step="any" id="customTgtIm1" value="0" placeholder="0">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal-btn-row">
-                    <button class="secondary-btn" onclick="toggleCustomModal()">Cancel</button>
-                    <button class="primary-btn" onclick="submitCustomChallenge()">Set Challenge & Solve</button>
-                </div>
-            </div>
-        </div>
-
-    </main>
+<!-- PAGE HEADING -->
+<div class="page-heading">
+    <p class="section-label">Lab 07 · Challenge</p>
+    <h1>Quantum State Challenge</h1>
+    <p>
+        Navigate from the initial qubit state to the target final state in the <strong>least amount of steps</strong>.
+        Apply quantum gates, track your trajectory on the 3D Bloch sphere, and master optimal state transformations.
+    </p>
 </div>
 
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
-</html>
+<!-- =========================================
+     SECTION 1: CHALLENGE SELECTION & PRESETS
+========================================== -->
+<section class="panel challenge-control-panel">
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">01</span>
+            <h2 id="challengeTitle">Loading Challenge...</h2>
+        </div>
+        <div class="challenge-badge-row">
+            <span id="challengeDifficultyBadge" class="operator-badge neutral">Easy</span>
+            <span id="parStepsBadge" class="operator-badge highlight">Par: &mdash; steps</span>
+        </div>
+    </div>
+
+    <!-- LEVEL PRESET PILLS -->
+    <div class="preset-section">
+        <span class="preset-label">Levels:</span>
+        <div class="preset-pill-grid">
+            <button class="preset-pill active" onclick="loadChallengePreset('level_1')">1. Bit Flip</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_2')">2. Bridge (H)</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_3')">3. Phase Flip</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_4')">4. Return</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_5')">5. Y-Axis</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_6')">6. Magic T</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_7')">7. Equator</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_8')">8. Conjugate</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_9')">9. Master</button>
+            <button class="preset-pill" onclick="loadChallengePreset('level_10')">10. Grand</button>
+        </div>
+    </div>
+
+    <!-- RANDOM GENERATOR & CUSTOM ACTION ROW -->
+    <div class="challenge-actions-toolbar">
+        <div class="generator-group">
+            <span class="toolbar-label">Generate random challenge:</span>
+            <button class="secondary-btn small-btn" onclick="generateNewRandomChallenge('easy')">Easy (1&ndash;2 moves)</button>
+            <button class="secondary-btn small-btn" onclick="generateNewRandomChallenge('medium')">Medium (3&ndash;4 moves)</button>
+            <button class="secondary-btn small-btn" onclick="generateNewRandomChallenge('hard')">Hard (5&ndash;6 moves)</button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="view-group">
+            <button class="secondary-btn small-btn" id="customChallengeBtn" onclick="toggleCustomModal()">Custom Target</button>
+            <button class="secondary-btn small-btn" id="viewToggleBtn" onclick="toggleSphereView()">Dual / Single Sphere</button>
+        </div>
+    </div>
+
+    <p id="challengeDescriptionText" class="challenge-description-box">
+        Loading description...
+    </p>
+</section>
+
+<!-- =========================================
+     SECTION 2: LIVE SCORECARD & METRICS
+========================================== -->
+<section class="challenge-metrics-grid">
+    <div class="metric-card">
+        <span class="metric-label">Current Moves</span>
+        <strong id="metricCurrentMoves" class="metric-value">0</strong>
+        <small id="metricMoveDifference" class="metric-sub">Target: least steps</small>
+    </div>
+
+    <div class="metric-card">
+        <span class="metric-label">Optimal (Par)</span>
+        <strong id="metricOptimalMoves" class="metric-value">&mdash;</strong>
+        <small class="metric-sub">Theoretical shortest path</small>
+    </div>
+
+    <div class="metric-card">
+        <span class="metric-label">Fidelity to Target</span>
+        <strong id="metricFidelity" class="metric-value">0.0%</strong>
+        <div class="progress mini-progress">
+            <div id="fidelityProgressBar" class="progress-fill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <span class="metric-label">Bloch Separation</span>
+        <strong id="metricBlochAngle" class="metric-value">&mdash;&deg;</strong>
+        <small id="metricBlochDistance" class="metric-sub">Distance: &mdash;</small>
+    </div>
+</section>
+
+<!-- =========================================
+     SECTION 3: 3D BLOCH SPHERES (PLOTLY)
+========================================== -->
+<section class="panel challenge-visualizer-panel">
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">02</span>
+            <h2>Bloch Sphere Trajectory</h2>
+        </div>
+        <div class="legend-indicator-row">
+            <span class="legend-chip current-chip"><span class="chip-dot current-dot"></span> Current State</span>
+            <span class="legend-chip target-chip"><span class="chip-dot target-dot"></span> Target State</span>
+        </div>
+    </div>
+
+    <!-- SINGLE COMBINED VIEW -->
+    <div id="combinedSphereContainer" class="sphere-display-area">
+        <div id="combinedBlochSphere" class="challenge-sphere-3d"></div>
+    </div>
+
+    <!-- DUAL SIDE-BY-SIDE VIEW (TOGGLEABLE) -->
+    <div id="dualSphereContainer" class="sphere-display-area dual-view" style="display: none;">
+        <div class="dual-sphere-box">
+            <h3 class="dual-sphere-title">Current State \(|\psi_{\text{curr}}\rangle\)</h3>
+            <div id="currentBlochSphere" class="challenge-sphere-3d dual"></div>
+            <div class="coord-tag-row">
+                <span>X: <b id="currX">0.00</b></span>
+                <span>Y: <b id="currY">0.00</b></span>
+                <span>Z: <b id="currZ">1.00</b></span>
+            </div>
+        </div>
+
+        <div class="dual-sphere-box">
+            <h3 class="dual-sphere-title">Target State \(|\psi_{\text{target}}\rangle\)</h3>
+            <div id="targetBlochSphere" class="challenge-sphere-3d dual"></div>
+            <div class="coord-tag-row">
+                <span>X: <b id="tgtX">0.00</b></span>
+                <span>Y: <b id="tgtY">0.00</b></span>
+                <span>Z: <b id="tgtZ">0.00</b></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="state-equation-row">
+        <div class="state-eq-card">
+            <span class="eq-label">Initial State</span>
+            <div id="initialKetDisplay" class="ket-value">|0&rang;</div>
+        </div>
+        <div class="state-eq-arrow">&rarr;</div>
+        <div class="state-eq-card active">
+            <span class="eq-label">Current State</span>
+            <div id="currentKetDisplay" class="ket-value">|0&rang;</div>
+        </div>
+        <div class="state-eq-arrow">&rarr;</div>
+        <div class="state-eq-card target">
+            <span class="eq-label">Target Final State</span>
+            <div id="targetKetDisplay" class="ket-value">|1&rang;</div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================================
+     SECTION 4: QUANTUM GATE CONTROLS
+========================================== -->
+<section class="panel challenge-gate-panel">
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">03</span>
+            <h2>Apply Quantum Gates</h2>
+        </div>
+        <span class="panel-subtitle">Click any gate to transform the qubit</span>
+    </div>
+
+    <div class="gate-grid challenge-gates">
+        <button class="gate-btn" onclick="applyChallengeGate('X')">
+            <strong>X</strong>
+            <small>Pauli-X (180&deg; X)</small>
+        </button>
+
+        <button class="gate-btn" onclick="applyChallengeGate('Y')">
+            <strong>Y</strong>
+            <small>Pauli-Y (180&deg; Y)</small>
+        </button>
+
+        <button class="gate-btn" onclick="applyChallengeGate('Z')">
+            <strong>Z</strong>
+            <small>Pauli-Z (180&deg; Z)</small>
+        </button>
+
+        <button class="gate-btn" onclick="applyChallengeGate('H')">
+            <strong>H</strong>
+            <small>Hadamard (X &harr; Z)</small>
+        </button>
+
+        <button class="gate-btn" onclick="applyChallengeGate('S')">
+            <strong>S</strong>
+            <small>Phase (90&deg; Z)</small>
+        </button>
+
+        <button class="gate-btn" onclick="applyChallengeGate('T')">
+            <strong>T</strong>
+            <small>Phase (45&deg; Z)</small>
+        </button>
+    </div>
+
+    <!-- ACTION CONTROL BUTTONS -->
+    <div class="challenge-control-buttons">
+        <button class="secondary-btn" onclick="undoChallengeGate()" id="undoBtn">
+            &#8630; Undo Move
+        </button>
+
+        <button class="secondary-btn" onclick="resetChallengeState()">
+            &#8635; Reset to Initial
+        </button>
+
+        <button class="primary-btn" onclick="getChallengeHint()">
+            Get Hint
+        </button>
+
+        <button class="secondary-btn solve-btn" onclick="revealOptimalSolution()">
+            Show Optimal Path
+        </button>
+    </div>
+
+    <!-- HINT / ADVICE DISPLAY BANNER -->
+    <div id="challengeHintBox" class="hint-alert-box" style="display: none;">
+        <div class="hint-icon">&#9432;</div>
+        <div class="hint-text" id="challengeHintText">Hint will appear here.</div>
+    </div>
+</section>
+
+<!-- =========================================
+     SECTION 5: CIRCUIT WIRE & HISTORY
+========================================== -->
+<section class="panel challenge-wire-panel">
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">04</span>
+            <h2>Applied Quantum Circuit Wire</h2>
+        </div>
+        <span id="circuitStepCountBadge" class="operator-badge neutral">0 gates executed</span>
+    </div>
+
+    <div class="circuit-board challenge-board">
+        <div class="wire">
+            <span class="qubit-label">q&#8320;</span>
+            <div id="challengeWireGates" class="circuit-gates">
+                <span class="empty-circuit">No gates applied yet. Choose a gate above to begin!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP HISTORY TABLE -->
+    <div class="history-table-container">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Step</th>
+                    <th>Gate Applied</th>
+                    <th>Resulting Ket</th>
+                    <th>Fidelity to Target</th>
+                    <th>Angular Distance</th>
+                </tr>
+            </thead>
+            <tbody id="challengeHistoryTableBody">
+                <tr>
+                    <td colspan="5" class="table-empty">Initial state ready. Apply your first gate.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- =========================================
+     VICTORY / COMPLETION MODAL
+========================================== -->
+<div id="victoryModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card victory-card">
+        <div class="victory-header">
+            <div class="victory-trophy">&#10003;</div>
+            <div id="victoryStars" class="victory-stars">&#9733;&#9733;&#9733;</div>
+            <h2 id="victoryTitle">Target Reached!</h2>
+            <p id="victorySubtitle">You have transformed the qubit to the final state.</p>
+        </div>
+
+        <div class="victory-stats-box">
+            <div class="v-stat">
+                <span>Your Moves:</span>
+                <strong id="victoryUserMoves">0</strong>
+            </div>
+            <div class="v-stat">
+                <span>Par (Optimal):</span>
+                <strong id="victoryOptimalMoves">0</strong>
+            </div>
+            <div class="v-stat">
+                <span>Efficiency:</span>
+                <strong id="victoryEfficiency">100%</strong>
+            </div>
+        </div>
+
+        <div id="victoryExplanation" class="victory-explanation">
+            Physics concept explanation appears here.
+        </div>
+
+        <div class="modal-btn-row">
+            <button class="secondary-btn" onclick="closeVictoryModal()">Review Circuit</button>
+            <button class="primary-btn" onclick="nextLevelOrRandom()">Next Challenge &rarr;</button>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================
+     CUSTOM STATE CREATOR MODAL
+========================================== -->
+<div id="customChallengeModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>Define Custom Target Challenge</h2>
+            <button class="close-modal-btn" onclick="toggleCustomModal()">&#10005;</button>
+        </div>
+
+        <div class="modal-body">
+            <p class="modal-help-text">
+                Choose or enter starting and target states. The engine will determine if a gate path exists and calculate the exact minimum number of steps!
+            </p>
+
+            <div class="custom-vector-group">
+                <h3>Initial State \(|\psi_{\text{init}}\rangle\)</h3>
+                <div class="custom-input-row">
+                    <div>
+                        <label for="customInitRe0">Re(&alpha;)</label>
+                        <input type="number" step="any" id="customInitRe0" value="1" placeholder="1">
+                    </div>
+                    <div>
+                        <label for="customInitIm0">Im(&alpha;)</label>
+                        <input type="number" step="any" id="customInitIm0" value="0" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="customInitRe1">Re(&beta;)</label>
+                        <input type="number" step="any" id="customInitRe1" value="0" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="customInitIm1">Im(&beta;)</label>
+                        <input type="number" step="any" id="customInitIm1" value="0" placeholder="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-vector-group">
+                <h3>Target State \(|\psi_{\text{target}}\rangle\)</h3>
+                <div class="custom-input-row">
+                    <div>
+                        <label for="customTgtRe0">Re(&alpha;)</label>
+                        <input type="number" step="any" id="customTgtRe0" value="0" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="customTgtIm0">Im(&alpha;)</label>
+                        <input type="number" step="any" id="customTgtIm0" value="0" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="customTgtRe1">Re(&beta;)</label>
+                        <input type="number" step="any" id="customTgtRe1" value="1" placeholder="1">
+                    </div>
+                    <div>
+                        <label for="customTgtIm1">Im(&beta;)</label>
+                        <input type="number" step="any" id="customTgtIm1" value="0" placeholder="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-btn-row">
+            <button class="secondary-btn" onclick="toggleCustomModal()">Cancel</button>
+            <button class="primary-btn" onclick="submitCustomChallenge()">Set Challenge &amp; Solve</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

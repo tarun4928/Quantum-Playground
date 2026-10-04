@@ -8,6 +8,10 @@
 
     <title>Quantum Principles | Quantum Playground</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Noto+Sans+Symbols+2&display=swap" rel="stylesheet">
+
     <!-- MathJax -->
     <script>
         window.MathJax = {
@@ -26,24 +30,120 @@
 
     <style>
 
+        :root {
+            --bg: #F5F0E6;
+            --surface: #FBF8F1;
+            --surface-2: #F3ECDD;
+            --inset: #F1EADB;
+            --text: #302820;
+            --text-soft: #4A3F33;
+            --muted: #7C6F5E;
+            --accent: #765438;
+            --accent-strong: #5E4128;
+            --accent-tint: rgba(118, 84, 56, 0.08);
+            --brass: #A88968;
+            --brass-strong: #8F6E4B;
+            --brass-tint: rgba(168, 137, 104, 0.16);
+            --olive: #5E7C4B;
+            --border: #D8CDBD;
+            --border-strong: #C4B7A2;
+
+            --font-symbols: "Noto Sans Symbols 2", "Segoe UI Symbol", "STIX Two Math", "Apple Symbols", "Cambria Math";
+            --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", var(--font-symbols), Arial, sans-serif;
+            --font-mono: "IBM Plex Mono", var(--font-symbols), Consolas, "Courier New", monospace;
+            --font-display: "Newsreader", "STIX Two Math", Georgia, "Times New Roman", serif;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #08111f;
-            color: #eaf2ff;
-            line-height: 1.6;
+        input,
+        textarea {
+            caret-color: var(--accent);
         }
+
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+        }
+
+
+        /* TOP BAR */
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .topbar-inner {
+            width: 92%;
+            max-width: 1250px;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .topbar-mark {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            color: var(--accent);
+            font-family: var(--font-display);
+            font-size: 17px;
+        }
+
+        .topbar-brand strong {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .topbar-back {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--accent);
+            text-decoration: none;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .topbar-back:hover {
+            border-color: var(--accent);
+            background: var(--accent-tint);
+        }
+
 
         .container {
             width: 92%;
             max-width: 1250px;
             margin: auto;
-            padding: 35px 0 70px;
+            padding: 40px 0 70px;
         }
 
 
@@ -51,43 +151,67 @@
 
         .header {
             text-align: center;
-            margin-bottom: 45px;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .header::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -2px;
+            width: 56px;
+            height: 3px;
+            transform: translateX(-50%);
+            background: var(--accent);
         }
 
         .header h1 {
-            font-size: 42px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 44px;
+            letter-spacing: -0.01em;
             margin-bottom: 10px;
         }
 
         .header p {
-            color: #9fb3cc;
-            font-size: 18px;
+            color: var(--muted);
+            font-size: 17px;
         }
 
         .tag {
             display: inline-block;
-            margin-top: 18px;
-            padding: 7px 15px;
-            border-radius: 20px;
-            background: #172942;
-            color: #69a9ff;
-            font-size: 13px;
+            margin-top: 20px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            background: var(--brass-tint);
+            border: 1px solid var(--border);
+            color: var(--brass-strong);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
 
         /* SECTIONS */
 
         .section {
-            margin-bottom: 45px;
+            margin-bottom: 48px;
         }
 
         .section-title {
-            font-size: 29px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 28px;
+            letter-spacing: -0.005em;
             margin-bottom: 8px;
         }
 
         .section-subtitle {
-            color: #9fb3cc;
+            color: var(--muted);
             margin-bottom: 22px;
         }
 
@@ -97,51 +221,54 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            gap: 16px;
         }
 
         .card {
-            background: #101d30;
-            border: 1px solid #223854;
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.18);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 2px rgba(48, 40, 32, 0.05);
         }
 
         .card h3 {
-            font-size: 21px;
+            font-size: 18px;
+            font-weight: 600;
             margin-bottom: 12px;
-            color: #ffffff;
+            color: var(--text);
         }
 
         .card p {
-            color: #b8c8dc;
+            color: var(--text-soft);
+            font-size: 14px;
             margin-bottom: 12px;
         }
 
         .important {
-            border-left: 4px solid #4d9cff;
+            border-left: 3px solid var(--accent);
         }
 
         .advanced {
-            border-left: 4px solid #a970ff;
+            border-left: 3px solid var(--brass);
         }
 
         .two-qubit {
-            border-left: 4px solid #32d6a0;
+            border-left: 3px solid var(--olive);
         }
 
 
         /* EQUATIONS */
 
         .equation {
-            background: #07101d;
-            border: 1px solid #243b58;
-            border-radius: 12px;
+            background: var(--inset);
+            border: 1px solid var(--border);
+            border-radius: 6px;
             padding: 18px;
             margin: 15px 0;
             text-align: center;
             overflow-x: auto;
+            color: var(--text);
         }
 
 
@@ -149,9 +276,9 @@
 
         .state-box {
             text-align: center;
-            background: #0c192a;
-            border: 1px solid #29415f;
-            border-radius: 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             padding: 22px;
             margin-top: 15px;
         }
@@ -174,16 +301,17 @@
         }
 
         .flow-box {
-            background: #14253c;
-            border: 1px solid #315071;
-            padding: 14px 20px;
-            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            padding: 13px 19px;
+            border-radius: 6px;
             text-align: center;
+            font-size: 14px;
         }
 
         .arrow {
-            color: #68aaff;
-            font-size: 24px;
+            color: var(--brass);
+            font-size: 22px;
         }
 
 
@@ -193,38 +321,45 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
-            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             overflow: hidden;
         }
 
         th,
         td {
-            border: 1px solid #29415f;
-            padding: 12px;
+            border: 1px solid var(--border);
+            padding: 11px;
             text-align: center;
         }
 
         th {
-            background: #172942;
-            color: #ffffff;
+            background: var(--surface-2);
+            color: var(--muted);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
         td {
-            color: #c4d2e3;
-            background: #0c1828;
+            color: var(--text-soft);
         }
 
 
         /* CIRCUIT */
 
         .circuit {
-            background: #07101d;
-            border: 1px solid #29415f;
-            border-radius: 12px;
-            padding: 25px;
+            background: var(--inset);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 24px;
             margin: 18px 0;
-            font-family: "Courier New", monospace;
-            font-size: 18px;
+            font-family: var(--font-mono);
+            font-size: 17px;
+            color: var(--text);
             overflow-x: auto;
         }
 
@@ -238,14 +373,15 @@
 
         .identity {
             text-align: center;
-            padding: 25px;
-            border-radius: 14px;
-            background: #0d1a2b;
-            border: 1px solid #29415f;
+            padding: 24px;
+            border-radius: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
         }
 
         .identity h3 {
-            margin-bottom: 18px;
+            font-size: 16px;
+            margin-bottom: 16px;
         }
 
         .identity .formula {
@@ -254,8 +390,8 @@
         }
 
         .identity p {
-            font-size: 14px;
-            color: #aebfd3;
+            font-size: 13px;
+            color: var(--muted);
         }
 
 
@@ -264,30 +400,32 @@
         .qubit-selector {
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
             margin-top: 15px;
         }
 
         .qubit-btn {
-            background: #14253c;
-            color: #ffffff;
-            border: 1px solid #315071;
-            border-radius: 10px;
-            padding: 12px 25px;
-            font-size: 18px;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 24px;
+            font-family: var(--font-mono);
+            font-size: 17px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: border-color 0.15s, background 0.15s, color 0.15s;
         }
 
         .qubit-btn:hover {
-            background: #1e3858;
-            transform: translateY(-2px);
+            border-color: var(--accent);
         }
 
         .qubit-btn.active {
-            background: #245a83;
-            border-color: #69a9ff;
+            background: var(--accent-tint);
+            border-color: var(--accent);
+            color: var(--accent);
+            font-weight: 600;
         }
 
 
@@ -306,9 +444,14 @@
 
         .footer {
             margin-top: 55px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
             text-align: center;
-            color: #7f94ae;
-            font-size: 14px;
+            color: var(--muted);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
 
 
@@ -336,6 +479,21 @@
 
 
 <body>
+
+<div class="topbar">
+
+    <div class="topbar-inner">
+
+        <a href="/" class="topbar-brand">
+            <span class="topbar-mark">&psi;</span>
+            <strong>Quantum Playground</strong>
+        </a>
+
+        <a href="/" class="topbar-back">&larr; Back to Labs</a>
+
+    </div>
+
+</div>
 
 <div class="container">
 

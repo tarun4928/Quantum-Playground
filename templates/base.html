@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Quantum Playground{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Noto+Sans+Symbols+2&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <a href="/" class="logo">
+            <div class="logo-icon">&psi;</div>
+            <div>
+                <h2>Quantum</h2>
+                <span>Playground</span>
+            </div>
+        </a>
+
+        <nav>
+
+            <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+                <span class="nav-index">01</span>
+                Home
+            </a>
+
+            <a href="/explore" class="nav-item {% if request.path == '/explore' %}active{% endif %}">
+                <span class="nav-index">02</span>
+                Explore
+            </a>
+
+            <a href="/circuit" class="nav-item {% if request.path == '/circuit' %}active{% endif %}">
+                <span class="nav-index">03</span>
+                Circuit Lab
+            </a>
+
+            <a href="/measurement" class="nav-item {% if request.path == '/measurement' %}active{% endif %}">
+                <span class="nav-index">04</span>
+                Measurement Lab
+            </a>
+
+            <a href="/entanglement" class="nav-item {% if request.path == '/entanglement' %}active{% endif %}">
+                <span class="nav-index">05</span>
+                Entanglement Lab
+            </a>
+
+            <a href="/operator" class="nav-item {% if request.path == '/operator' %}active{% endif %}">
+                <span class="nav-index">06</span>
+                Operator Lab
+            </a>
+
+            <a href="/challenge" class="nav-item {% if request.path in ['/challenge', '/game'] %}active{% endif %}">
+                <span class="nav-index">07</span>
+                State Challenge
+            </a>
+
+            <div class="nav-divider"></div>
+
+            <a href="/learn" class="nav-item {% if request.path == '/learn' %}active{% endif %}">
+                <span class="nav-index">08</span>
+                Learn
+            </a>
+
+            <a href="/about" class="nav-item {% if request.path == '/about' %}active{% endif %}">
+                <span class="nav-index">09</span>
+                About
+            </a>
+
+            <a href="/help" class="nav-item {% if request.path == '/help' %}active{% endif %}">
+                <span class="nav-index">10</span>
+                Help
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+            <span class="status-dot"></span>
+            Quantum Engine Ready
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content {% block main_class %}{% endblock %}">
+
+        {% block content %}{% endblock %}
+
+    </main>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

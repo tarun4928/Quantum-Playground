@@ -397,19 +397,20 @@ function renderBlochSpherePlaceholder(targetId = "blochSphere", title = "Input S
     });
 
     Plotly.react(sphere, [{
-        x: sx, y: sy, z: sz, type: "surface", opacity: 0.10, showscale: false, hoverinfo: "skip"
+        x: sx, y: sy, z: sz, type: "surface", opacity: 0.35, showscale: false, hoverinfo: "skip",
+        colorscale: [[0, "rgb(244, 237, 223)"], [1, "rgb(206, 188, 156)"]]
     }], {
         margin: { l: 0, r: 0, t: 25, b: 0 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         scene: {
-            xaxis: { title: "X", range: [-1.2, 1.2] },
-            yaxis: { title: "Y", range: [-1.2, 1.2] },
-            zaxis: { title: "Z", range: [-1.2, 1.2] },
+            xaxis: { title: "X", range: [-1.2, 1.2], color: "#8A7A66", gridcolor: "rgba(118,84,56,0.14)", zerolinecolor: "rgba(118,84,56,0.3)", showbackground: false },
+            yaxis: { title: "Y", range: [-1.2, 1.2], color: "#8A7A66", gridcolor: "rgba(118,84,56,0.14)", zerolinecolor: "rgba(118,84,56,0.3)", showbackground: false },
+            zaxis: { title: "Z", range: [-1.2, 1.2], color: "#8A7A66", gridcolor: "rgba(118,84,56,0.14)", zerolinecolor: "rgba(118,84,56,0.3)", showbackground: false },
             aspectmode: "cube"
         },
         showlegend: false,
-        title: { text: title, font: { size: 13 } }
+        title: { text: title, font: { size: 12, color: "#6B5D4C", family: "IBM Plex Mono, monospace" } }
     }, { responsive: true });
 }
 
@@ -491,7 +492,8 @@ function updateBlochSphere(data) {
         y: sphereY,
         z: sphereZ,
         type: "surface",
-        opacity: 0.15,
+        opacity: 0.35,
+        colorscale: [[0, "rgb(244, 237, 223)"], [1, "rgb(206, 188, 156)"]],
         showscale: false,
         hoverinfo: "skip"
     };
@@ -502,7 +504,7 @@ function updateBlochSphere(data) {
         z: [z],
         type: "scatter3d",
         mode: "markers",
-        marker: { size: 7 },
+        marker: { size: 7, color: "#765438" },
         name: "Quantum State",
         hovertemplate: "x=%{x:.3f}<br>y=%{y:.3f}<br>z=%{z:.3f}<extra></extra>"
     };
@@ -513,7 +515,7 @@ function updateBlochSphere(data) {
         z: [0, z],
         type: "scatter3d",
         mode: "lines",
-        line: { width: 6 },
+        line: { width: 6, color: "#765438" },
         name: "State Vector",
         hoverinfo: "skip"
     };
@@ -530,6 +532,7 @@ function updateBlochSphere(data) {
         anchor: "tip",
         sizemode: "absolute",
         sizeref: 0.18,
+        colorscale: [[0, "#765438"], [1, "#765438"]],
         showscale: false,
         hoverinfo: "skip",
         name: "State Direction"
@@ -546,17 +549,29 @@ function updateBlochSphere(data) {
                 xaxis: {
                     title: "X",
                     range: [-1.2, 1.2],
-                    zeroline: true
+                    zeroline: true,
+                    color: "#8A7A66",
+                    gridcolor: "rgba(118,84,56,0.14)",
+                    zerolinecolor: "rgba(118,84,56,0.3)",
+                    showbackground: false
                 },
                 yaxis: {
                     title: "Y",
                     range: [-1.2, 1.2],
-                    zeroline: true
+                    zeroline: true,
+                    color: "#8A7A66",
+                    gridcolor: "rgba(118,84,56,0.14)",
+                    zerolinecolor: "rgba(118,84,56,0.3)",
+                    showbackground: false
                 },
                 zaxis: {
                     title: "Z",
                     range: [-1.2, 1.2],
-                    zeroline: true
+                    zeroline: true,
+                    color: "#8A7A66",
+                    gridcolor: "rgba(118,84,56,0.14)",
+                    zerolinecolor: "rgba(118,84,56,0.3)",
+                    showbackground: false
                 },
                 aspectmode: "cube"
             },
@@ -564,6 +579,11 @@ function updateBlochSphere(data) {
         },
         { responsive: true }
     );
+}
+
+// Generic named renderer (also used for the initial-state preview).
+function renderBlochSphere(elementId, coordinates, title) {
+    renderOperatorSphere(elementId, coordinates, title);
 }
 
 
@@ -2648,7 +2668,7 @@ function addOperatorLabNav() {
     if (window.location.pathname === "/operator") {
         link.classList.add("active");
     }
-    link.innerHTML = "<span>λ</span> Define Your Own Quantum Gate";
+    link.innerHTML = '<span class="nav-index">06</span> Operator Lab';
 
     const divider = nav.querySelector(".nav-divider");
     if (divider) nav.insertBefore(link, divider);
@@ -2809,18 +2829,26 @@ function setOperatorCoordinates(prefix, coordinates) {
 }
 
 function operatorSphereLayout(title) {
+    const axisStyle = {
+        range: [-1.2, 1.2],
+        zeroline: true,
+        color: "#8A7A66",
+        gridcolor: "rgba(118,84,56,0.14)",
+        zerolinecolor: "rgba(118,84,56,0.3)",
+        showbackground: false
+    };
     return {
         margin: { l: 0, r: 0, t: 34, b: 0 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         scene: {
-            xaxis: { title: "X", range: [-1.2, 1.2], zeroline: true },
-            yaxis: { title: "Y", range: [-1.2, 1.2], zeroline: true },
-            zaxis: { title: "Z", range: [-1.2, 1.2], zeroline: true },
+            xaxis: { title: "X", ...axisStyle },
+            yaxis: { title: "Y", ...axisStyle },
+            zaxis: { title: "Z", ...axisStyle },
             aspectmode: "cube"
         },
         showlegend: false,
-        title: { text: title, font: { size: 12 } }
+        title: { text: title, font: { size: 12, color: "#6B5D4C", family: "IBM Plex Mono, monospace" } }
     };
 }
 
@@ -2856,7 +2884,8 @@ function renderOperatorSphere(elementId, coordinates, title) {
         y: sphereY,
         z: sphereZ,
         type: "surface",
-        opacity: 0.15,
+        opacity: 0.35,
+        colorscale: [[0, "rgb(244, 237, 223)"], [1, "rgb(206, 188, 156)"]],
         showscale: false,
         hoverinfo: "skip"
     };
@@ -2874,7 +2903,7 @@ function renderOperatorSphere(elementId, coordinates, title) {
             z: [0, z],
             type: "scatter3d",
             mode: "lines",
-            line: { width: 6 },
+            line: { width: 6, color: "#765438" },
             hoverinfo: "skip"
         });
 
@@ -2889,6 +2918,7 @@ function renderOperatorSphere(elementId, coordinates, title) {
             anchor: "tip",
             sizemode: "absolute",
             sizeref: 0.16,
+            colorscale: [[0, "#765438"], [1, "#765438"]],
             showscale: false,
             hoverinfo: "skip"
         });
@@ -2899,7 +2929,7 @@ function renderOperatorSphere(elementId, coordinates, title) {
             z: [z],
             type: "scatter3d",
             mode: "markers",
-            marker: { size: 7 },
+            marker: { size: 7, color: "#765438" },
             hovertemplate: "x=%{x:.3f}<br>y=%{y:.3f}<br>z=%{z:.3f}<extra></extra>"
         });
     }
@@ -3629,7 +3659,7 @@ function addChallengeNav() {
     if (window.location.pathname === "/challenge" || window.location.pathname === "/game") {
         link.classList.add("active");
     }
-    link.innerHTML = "<span>🎯</span> Quantum State Challenge";
+    link.innerHTML = '<span class="nav-index">07</span> State Challenge';
 
     const divider = nav.querySelector(".nav-divider");
     if (divider) nav.insertBefore(link, divider);
@@ -3637,39 +3667,27 @@ function addChallengeNav() {
 }
 
 function challengeSphereLayout(title) {
+    const axisStyle = {
+        range: [-1.25, 1.25],
+        zeroline: true,
+        showgrid: true,
+        gridcolor: "rgba(118,84,56,0.14)",
+        zerolinecolor: "rgba(118,84,56,0.3)",
+        showbackground: false,
+        color: "#8A7A66"
+    };
     return {
         margin: { l: 0, r: 0, t: 28, b: 0 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         scene: {
-            xaxis: {
-                title: "X",
-                range: [-1.25, 1.25],
-                zeroline: true,
-                showgrid: true,
-                gridcolor: "rgba(255,255,255,0.08)",
-                color: "#8e96b3"
-            },
-            yaxis: {
-                title: "Y",
-                range: [-1.25, 1.25],
-                zeroline: true,
-                showgrid: true,
-                gridcolor: "rgba(255,255,255,0.08)",
-                color: "#8e96b3"
-            },
-            zaxis: {
-                title: "Z",
-                range: [-1.25, 1.25],
-                zeroline: true,
-                showgrid: true,
-                gridcolor: "rgba(255,255,255,0.08)",
-                color: "#8e96b3"
-            },
+            xaxis: { title: "X", ...axisStyle },
+            yaxis: { title: "Y", ...axisStyle },
+            zaxis: { title: "Z", ...axisStyle },
             aspectmode: "cube"
         },
         showlegend: false,
-        title: { text: title, font: { size: 12, color: "#d1d5db" } }
+        title: { text: title, font: { size: 12, color: "#6B5D4C", family: "IBM Plex Mono, monospace" } }
     };
 }
 
@@ -3703,10 +3721,10 @@ function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, titl
         y: sphereY,
         z: sphereZ,
         type: "surface",
-        opacity: 0.12,
+        opacity: 0.35,
         colorscale: [
-            [0, "rgb(30, 41, 75)"],
-            [1, "rgb(78, 156, 255)"]
+            [0, "rgb(244, 237, 223)"],
+            [1, "rgb(206, 188, 156)"]
         ],
         showscale: false,
         hoverinfo: "skip"
@@ -3714,7 +3732,7 @@ function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, titl
 
     const traces = [surface];
 
-    // Target State Vector (Gold/Amber)
+    // Target State Vector (Brass)
     if (targetCoords) {
         const tx = Number(targetCoords.x);
         const ty = Number(targetCoords.y);
@@ -3726,7 +3744,7 @@ function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, titl
             z: [0, tz],
             type: "scatter3d",
             mode: "lines",
-            line: { color: "#ffb84d", width: 6, dash: "dot" },
+            line: { color: "#A2762A", width: 6, dash: "dot" },
             name: "Target State",
             hoverinfo: "skip"
         });
@@ -3742,7 +3760,7 @@ function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, titl
             anchor: "tip",
             sizemode: "absolute",
             sizeref: 0.15,
-            colorscale: [[0, "#ffb84d"], [1, "#ffb84d"]],
+            colorscale: [[0, "#A2762A"], [1, "#A2762A"]],
             showscale: false,
             hoverinfo: "skip"
         });
@@ -3753,13 +3771,13 @@ function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, titl
             z: [tz],
             type: "scatter3d",
             mode: "markers",
-            marker: { size: 7, color: "#ffb84d" },
+            marker: { size: 7, color: "#A2762A" },
             name: "Target State",
             hovertemplate: "Target: x=%{x:.3f}, y=%{y:.3f}, z=%{z:.3f}<extra></extra>"
         });
     }
 
-    // Current State Vector (Vibrant Cyan)
+    // Current State Vector (Deep Brown)
     if (currentCoords) {
         const cx = Number(currentCoords.x);
         const cy = Number(currentCoords.y);
@@ -3771,7 +3789,7 @@ function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, titl
             z: [0, cz],
             type: "scatter3d",
             mode: "lines",
-            line: { color: "#00e5ff", width: 7 },
+            line: { color: "#765438", width: 7 },
             name: "Current State",
             hoverinfo: "skip"
         });
@@ -3787,7 +3805,7 @@ function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, titl
             anchor: "tip",
             sizemode: "absolute",
             sizeref: 0.16,
-            colorscale: [[0, "#00e5ff"], [1, "#00e5ff"]],
+            colorscale: [[0, "#765438"], [1, "#765438"]],
             showscale: false,
             hoverinfo: "skip"
         });
@@ -3798,7 +3816,7 @@ function renderChallengeBlochSphere(elementId, currentCoords, targetCoords, titl
             z: [cz],
             type: "scatter3d",
             mode: "markers",
-            marker: { size: 8, color: "#00e5ff" },
+            marker: { size: 8, color: "#765438" },
             name: "Current State",
             hovertemplate: "Current: x=%{x:.3f}, y=%{y:.3f}, z=%{z:.3f}<extra></extra>"
         });
@@ -3850,13 +3868,13 @@ function updateChallengeUI(data) {
             diffEl.style.color = "var(--muted)";
         } else if (moves === par) {
             diffEl.textContent = "At Par (Optimal pace!)";
-            diffEl.style.color = "#42d6a4";
+            diffEl.style.color = "#5E7C4B";
         } else if (moves < par) {
             diffEl.textContent = `${par - moves} move(s) remaining for par`;
-            diffEl.style.color = "#4e9cff";
+            diffEl.style.color = "#8F6E4B";
         } else {
             diffEl.textContent = `+${moves - par} over par`;
-            diffEl.style.color = "#ff9c5a";
+            diffEl.style.color = "#A65E2E";
         }
     }
 
@@ -3871,14 +3889,14 @@ function updateChallengeUI(data) {
     const barEl = document.getElementById("fidelityProgressBar");
     if (barEl) {
         barEl.style.width = `${Math.min(100, Math.max(0, fid * 100))}%`;
-        barEl.style.background = fid >= 0.999 ? "#42d6a4" : (fid > 0.5 ? "#4e9cff" : "#9b6cff");
+        barEl.style.background = fid >= 0.999 ? "#5E7C4B" : (fid > 0.5 ? "#A88968" : "#765438");
     }
 
     const angle = Number(evaluation.angle_degrees ?? 0);
     const angleEl = document.getElementById("metricBlochAngle");
     if (angleEl) {
         angleEl.textContent = evaluation.target_reached ? "0.0° (Aligned!)" : `${angle.toFixed(1)}°`;
-        angleEl.style.color = evaluation.target_reached ? "#42d6a4" : "#fff";
+        angleEl.style.color = evaluation.target_reached ? "#5E7C4B" : "#302820";
     }
 
     const distEl = document.getElementById("metricBlochDistance");
@@ -3915,7 +3933,7 @@ function updateChallengeUI(data) {
     if (tZ) tZ.textContent = Number(tgtCoords.z).toFixed(2);
 
     // 5. Render 3D Spheres
-    renderChallengeBlochSphere("combinedBlochSphere", currCoords, tgtCoords, "Current State (Cyan) vs Target State (Amber)");
+    renderChallengeBlochSphere("combinedBlochSphere", currCoords, tgtCoords, "Current state (brown) vs target state (brass)");
     renderChallengeBlochSphere("currentBlochSphere", currCoords, null, "Current State");
     renderChallengeBlochSphere("targetBlochSphere", null, tgtCoords, "Target State");
 
@@ -4018,15 +4036,15 @@ function showVictoryModal(data) {
     if (effEl) effEl.textContent = `${eff}%`;
 
     if (moves === optimal) {
-        if (starsEl) starsEl.textContent = "⭐⭐⭐";
+        if (starsEl) starsEl.textContent = "★★★";
         if (titleEl) titleEl.textContent = "FLAWLESS! LEAST STEPS ACHIEVED!";
         if (subEl) subEl.textContent = `Masterful! You reached the target state in the exact minimum of ${optimal} step${optimal === 1 ? '' : 's'}.`;
     } else if (moves <= optimal + 2) {
-        if (starsEl) starsEl.textContent = "⭐⭐";
+        if (starsEl) starsEl.textContent = "★★☆";
         if (titleEl) titleEl.textContent = "GREAT JOB! TARGET REACHED!";
         if (subEl) subEl.textContent = `Completed in ${moves} moves (Par is ${optimal} steps). Try solving it in fewer steps!`;
     } else {
-        if (starsEl) starsEl.textContent = "⭐";
+        if (starsEl) starsEl.textContent = "★☆☆";
         if (titleEl) titleEl.textContent = "TARGET REACHED!";
         if (subEl) subEl.textContent = `You reached the target in ${moves} moves, but it can be done in only ${optimal} step${optimal === 1 ? '' : 's'}.`;
     }
@@ -4228,19 +4246,19 @@ function toggleSphereView() {
         challengeViewMode = "dual";
         if (combined) combined.style.display = "none";
         if (dual) dual.style.display = "grid";
-        if (btn) btn.textContent = "🔄 Switch to Single Sphere";
+        if (btn) btn.textContent = "Switch to Single Sphere";
     } else {
         challengeViewMode = "combined";
         if (combined) combined.style.display = "block";
         if (dual) dual.style.display = "none";
-        if (btn) btn.textContent = "🔄 Switch to Dual Spheres";
+        if (btn) btn.textContent = "Switch to Dual Spheres";
     }
 
     if (challengeStateData) {
         const currCoords = challengeStateData.current_payload?.bloch_coordinates;
         const tgtCoords = challengeStateData.target_payload?.bloch_coordinates;
         if (challengeViewMode === "combined") {
-            renderChallengeBlochSphere("combinedBlochSphere", currCoords, tgtCoords, "Current State (Cyan) vs Target State (Amber)");
+            renderChallengeBlochSphere("combinedBlochSphere", currCoords, tgtCoords, "Current state (brown) vs target state (brass)");
         } else {
             renderChallengeBlochSphere("currentBlochSphere", currCoords, null, "Current State");
             renderChallengeBlochSphere("targetBlochSphere", null, tgtCoords, "Target State");

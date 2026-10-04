@@ -1,823 +1,661 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
+{% block title %}Explore | Quantum Playground{% endblock %}
 
-    <meta charset="UTF-8">
+{% block head %}
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+<!-- Plotly for 3D Bloch Sphere -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
-    <title>
-        Explore | Quantum Playground
-    </title>
+<!-- MathJax for quantum-state notation -->
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)']],
+            displayMath: [['\\[', '\\]']]
+        }
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+{% endblock %}
 
-    <!-- Plotly for 3D Bloch Sphere -->
-    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+{% block content %}
 
-    <!-- MathJax for quantum-state notation -->
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['\\(', '\\)']],
-                displayMath: [['\\[', '\\]']]
-            }
-        };
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<div class="page-heading">
 
-</head>
+    <p class="section-label">
+        Lab 02 · Single Qubit
+    </p>
+
+    <h1>
+        Single Qubit Explorer
+    </h1>
+
+    <p>
+        Apply quantum gates and observe how
+        the qubit state changes in real time.
+    </p>
+
+</div>
+
+<!-- EXPLORER SWITCH -->
+<div class="explorer-switch">
+
+    <button
+        id="singleExplorerTab"
+        class="explorer-tab active"
+        onclick="showExplorer('single')">
+        Single Qubit
+    </button>
+
+    <button
+        id="doubleExplorerTab"
+        class="explorer-tab"
+        onclick="showExplorer('double')">
+        Two-Qubit Explorer
+    </button>
+
+</div>
+
+<!-- =================================================
+     SINGLE QUBIT EXPLORER
+================================================== -->
+<div id="singleExplorer" class="explorer-view active-view">
+
+<div class="workspace-grid">
 
 
-<body>
+    <!-- =============================================
+         CONTROLS
+    ============================================== -->
 
-<div class="app-container">
+    <section class="panel">
 
-
-    <!-- =================================================
-         SIDEBAR
-    ================================================== -->
-
-    <aside class="sidebar">
-
-        <div class="logo">
-
-            <div class="logo-icon">
-                ⚛
-            </div>
+        <div class="panel-title">
 
             <div>
 
-                <h2>Quantum</h2>
-
-                <span>
-                    Playground
+                <span class="panel-number">
+                    01
                 </span>
+
+                <h2>
+                    Qubit Controls
+                </h2>
 
             </div>
 
         </div>
 
 
-        <nav>
+        <div class="state-definition-panel">
 
-            <a href="/" class="nav-item">
-                <span>⌂</span>
-                Home
-            </a>
+            <div class="operator-label-row">
+                <span>Define Initial Qubit State</span>
+                <small>2 × 1 complex column vector</small>
+            </div>
 
+            <div class="initial-state-equation">
+                \[
+                |\psi\rangle =
+                \begin{bmatrix}
+                \alpha\\
+                \beta
+                \end{bmatrix}
+                \]
+            </div>
 
-            <a href="/explore"
-               class="nav-item active">
+            <div class="initial-state-grid">
+                <div>
+                    <label class="operator-input-label" for="initialReal0">Re(&alpha;)</label>
+                    <input id="initialReal0" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+                <div>
+                    <label class="operator-input-label" for="initialImag0">Im(&alpha;)</label>
+                    <input id="initialImag0" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+                <div>
+                    <label class="operator-input-label" for="initialReal1">Re(&beta;)</label>
+                    <input id="initialReal1" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+                <div>
+                    <label class="operator-input-label" for="initialImag1">Im(&beta;)</label>
+                    <input id="initialImag1" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+            </div>
 
-                <span>◉</span>
-                Explore
+            <div class="preset-row">
+                <span>Quick states:</span>
+                <button type="button" class="preset-btn" onclick="setPresetState('zero')">|0&rang;</button>
+                <button type="button" class="preset-btn" onclick="setPresetState('one')">|1&rang;</button>
+                <button type="button" class="preset-btn" onclick="setPresetState('plus')">|+&rang;</button>
+                <button type="button" class="preset-btn" onclick="setPresetState('minus')">|&minus;&rang;</button>
+            </div>
 
-            </a>
+            <p class="operator-help">
+                Enter any non-zero two-component state. The simulator normalizes it before using it as a quantum state.
+            </p>
 
+            <button class="primary-btn full-btn" onclick="setInitialState()">
+                Set Initial State
+            </button>
 
-            <a href="/circuit"
-               class="nav-item">
-
-                <span>⚡</span>
-                Circuit Lab
-
-            </a>
-
-
-            <a href="/measurement"
-               class="nav-item">
-
-                <span>▣</span>
-                Measurement Lab
-
-            </a>
-
-
-            <a href="/entanglement"
-               class="nav-item">
-
-                <span>∞</span>
-                Entanglement Lab
-
-            <a href="/operator"
-               class="nav-item">
-
-                <span>λ</span>
-                Define Your Own Quantum Gate
-
-            </a>
-
-            <a href="/challenge"
-               class="nav-item">
-
-                <span>🎯</span>
-                Quantum State Challenge
-
-            </a>
-
-
-            <div class="nav-divider"></div>
-
-
-            <a href="/learn"
-               class="nav-item">
-
-                <span>📖</span>
-                Learn
-
-            </a>
-
-
-            <a href="/about"
-               class="nav-item">
-
-                <span>ⓘ</span>
-                About
-
-            </a>
-
-
-            <a href="/help"
-               class="nav-item">
-
-                <span>?</span>
-                Help
-
-            </a>
-
-        </nav>
-
-
-        <div class="sidebar-bottom">
-
-            <span class="status-dot"></span>
-
-            Quantum Engine Ready
+            <div id="initialStateMessage" class="initial-state-message">
+                Define your state before applying a gate.
+            </div>
 
         </div>
 
-    </aside>
+
+        <div class="state-display">
+
+            <span>Current State</span>
+
+            <strong id="stateDisplay">
+                Not defined
+            </strong>
+
+        </div>
 
 
-
-    <!-- =================================================
-         MAIN
-    ================================================== -->
-
-    <main class="main-content">
+        <h3 class="subheading">
+            Quantum Gates
+        </h3>
 
 
-        <div class="page-heading">
-
-            <p class="section-label">
-                LAB 01
-            </p>
+        <div class="gate-grid">
 
 
-            <h1>
-                Single Qubit Explorer
-            </h1>
+            <button class="gate-btn single-gate-control" disabled
+                    onclick="applyGate('X')">
 
+                <strong>X</strong>
+                <small>Pauli-X</small>
+
+            </button>
+
+
+            <button class="gate-btn single-gate-control" disabled
+                    onclick="applyGate('Y')">
+
+                <strong>Y</strong>
+                <small>Pauli-Y</small>
+
+            </button>
+
+
+            <button class="gate-btn single-gate-control" disabled
+                    onclick="applyGate('Z')">
+
+                <strong>Z</strong>
+                <small>Pauli-Z</small>
+
+            </button>
+
+
+            <button class="gate-btn single-gate-control" disabled
+                    onclick="applyGate('H')">
+
+                <strong>H</strong>
+                <small>Hadamard</small>
+
+            </button>
+
+
+            <button class="gate-btn single-gate-control" disabled
+                    onclick="applyGate('S')">
+
+                <strong>S</strong>
+                <small>Phase</small>
+
+            </button>
+
+
+            <button class="gate-btn single-gate-control" disabled
+                    onclick="applyGate('T')">
+
+                <strong>T</strong>
+                <small>Phase</small>
+
+            </button>
+
+
+        </div>
+
+
+        <button class="reset-btn" id="resetQubitButton" disabled
+                onclick="resetQubit()">
+
+            &#8635; Reset to Initial State
+
+        </button>
+
+
+        <div class="gate-info">
+
+            <h3>
+                How it works
+            </h3>
 
             <p>
-                Apply quantum gates and observe how
-                the qubit state changes in real time.
+                First define your qubit state, then apply X, Y, Z, H, S or T to transform it.
+            </p>
+
+            <p>
+                The Python quantum engine calculates the new state and the Bloch sphere updates after every operation.
             </p>
 
         </div>
 
-    <!-- EXPLORER SWITCH -->
-    <div class="explorer-switch">
+    </section>
 
-        <button
-            id="singleExplorerTab"
-            class="explorer-tab active"
-            onclick="showExplorer('single')">
-            Single Qubit
-        </button>
 
-        <button
-            id="doubleExplorerTab"
-            class="explorer-tab"
-            onclick="showExplorer('double')">
-            Two-Qubit Explorer
-        </button>
+    <!-- =============================================
+         BLOCH SPHERE
+    ============================================== -->
 
-    </div>
+    <section class="panel bloch-panel">
 
-        <!-- =================================================
-             SINGLE QUBIT EXPLORER
-        ================================================== -->
-        <div id="singleExplorer" class="explorer-view active-view">
+        <div class="panel-title">
 
-        <div class="workspace-grid">
+            <div>
 
+                <span class="panel-number">
+                    02
+                </span>
 
-            <!-- =============================================
-                 CONTROLS
-            ============================================== -->
+                <h2>
+                    Bloch Sphere
+                </h2>
 
-            <section class="panel">
+            </div>
 
-                <div class="panel-title">
-
-                    <div>
-
-                        <span class="panel-number">
-                            01
-                        </span>
-
-                        <h2>
-                            Qubit Controls
-                        </h2>
-
-                    </div>
-
-                </div>
-
-
-                <div class="state-definition-panel">
-
-                    <div class="operator-label-row">
-                        <span>Define Initial Qubit State</span>
-                        <small>2 × 1 complex column vector</small>
-                    </div>
-
-                    <div class="initial-state-equation">
-                        \[
-                        |\psi\rangle =
-                        \begin{bmatrix}
-                        \alpha\\
-                        \beta
-                        \end{bmatrix}
-                        \]
-                    </div>
-
-                    <div class="initial-state-grid">
-                        <div>
-                            <label class="operator-input-label" for="initialReal0">Re(α)</label>
-                            <input id="initialReal0" class="operator-input" type="number" step="any" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="operator-input-label" for="initialImag0">Im(α)</label>
-                            <input id="initialImag0" class="operator-input" type="number" step="any" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="operator-input-label" for="initialReal1">Re(β)</label>
-                            <input id="initialReal1" class="operator-input" type="number" step="any" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="operator-input-label" for="initialImag1">Im(β)</label>
-                            <input id="initialImag1" class="operator-input" type="number" step="any" placeholder="0">
-                        </div>
-                    </div>
-
-                    <div class="preset-row">
-                        <span>Quick states:</span>
-                        <button type="button" class="preset-btn" onclick="setPresetState('zero')">|0⟩</button>
-                        <button type="button" class="preset-btn" onclick="setPresetState('one')">|1⟩</button>
-                        <button type="button" class="preset-btn" onclick="setPresetState('plus')">|+⟩</button>
-                        <button type="button" class="preset-btn" onclick="setPresetState('minus')">|−⟩</button>
-                    </div>
-
-                    <p class="operator-help">
-                        Enter any non-zero two-component state. The simulator normalizes it before using it as a quantum state.
-                    </p>
-
-                    <button class="primary-btn full-btn" onclick="setInitialState()">
-                        Set Initial State
-                    </button>
-
-                    <div id="initialStateMessage" class="initial-state-message">
-                        Define your state before applying a gate.
-                    </div>
-
-                </div>
-
-
-                <div class="state-display">
-
-                    <span>Current State</span>
-
-                    <strong id="stateDisplay">
-                        Not defined
-                    </strong>
-
-                </div>
-
-
-                <h3 class="subheading">
-                    Quantum Gates
-                </h3>
-
-
-                <div class="gate-grid">
-
-
-                    <button class="gate-btn single-gate-control" disabled
-                            onclick="applyGate('X')">
-
-                        <strong>X</strong>
-                        <small>Pauli-X</small>
-
-                    </button>
-
-
-                    <button class="gate-btn single-gate-control" disabled
-                            onclick="applyGate('Y')">
-
-                        <strong>Y</strong>
-                        <small>Pauli-Y</small>
-
-                    </button>
-
-
-                    <button class="gate-btn single-gate-control" disabled
-                            onclick="applyGate('Z')">
-
-                        <strong>Z</strong>
-                        <small>Pauli-Z</small>
-
-                    </button>
-
-
-                    <button class="gate-btn single-gate-control" disabled
-                            onclick="applyGate('H')">
-
-                        <strong>H</strong>
-                        <small>Hadamard</small>
-
-                    </button>
-
-
-                    <button class="gate-btn single-gate-control" disabled
-                            onclick="applyGate('S')">
-
-                        <strong>S</strong>
-                        <small>Phase</small>
-
-                    </button>
-
-
-                    <button class="gate-btn single-gate-control" disabled
-                            onclick="applyGate('T')">
-
-                        <strong>T</strong>
-                        <small>Phase</small>
-
-                    </button>
-
-
-                </div>
-
-
-                <button class="reset-btn" id="resetQubitButton" disabled
-                        onclick="resetQubit()">
-
-                    ↻ Reset to Initial State
-
-                </button>
-
-
-                <div class="gate-info">
-
-                    <h3>
-                        How it works
-                    </h3>
-
-                    <p>
-                        First define your qubit state, then apply X, Y, Z, H, S or T to transform it.
-                    </p>
-
-                    <p>
-                        The Python quantum engine calculates the new state and the Bloch sphere updates after every operation.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =============================================
-                 BLOCH SPHERE
-            ============================================== -->
-
-            <section class="panel bloch-panel">
-
-                <div class="panel-title">
-
-                    <div>
-
-                        <span class="panel-number">
-                            02
-                        </span>
-
-                        <h2>
-                            Bloch Sphere
-                        </h2>
-
-                    </div>
-
-                    <span class="live-badge">
-                        LIVE
-                    </span>
-
-                </div>
-
-
-                <!-- Real 3D visualization -->
-                <div id="blochSphere"></div>
-
-
-                <div class="coordinates">
-
-
-                    <div>
-
-                        <span>X</span>
-
-                        <strong id="coordX">
-                            0.00
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>Y</span>
-
-                        <strong id="coordY">
-                            0.00
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>Z</span>
-
-                        <strong id="coordZ">
-                            1.00
-                        </strong>
-
-                    </div>
-
-
-                </div>
-
-            </section>
+            <span class="live-badge">
+                Live
+            </span>
 
         </div>
 
 
-
-        <!-- =================================================
-             PROBABILITIES
-        ================================================== -->
-
-        <section class="panel probability-panel">
+        <!-- Real 3D visualization -->
+        <div id="blochSphere"></div>
 
 
-            <div class="panel-title">
+        <div class="coordinates">
 
-                <div>
 
-                    <span class="panel-number">
-                        03
-                    </span>
+            <div>
 
-                    <h2>
-                        Measurement Probabilities
-                    </h2>
+                <span>X</span>
 
-                </div>
-
-                <span class="live-badge">
-                    LIVE
-                </span>
+                <strong id="coordX">
+                    0.00
+                </strong>
 
             </div>
 
 
+            <div>
 
-            <div class="probability-row">
+                <span>Y</span>
 
-
-                <div class="probability-label">
-
-                    <span>
-                        |0⟩
-                    </span>
-
-                    <strong id="prob0">
-                        100%
-                    </strong>
-
-                </div>
-
-
-                <div class="progress">
-
-                    <div id="bar0"
-                         class="progress-fill"
-                         style="width:100%">
-                    </div>
-
-                </div>
+                <strong id="coordY">
+                    0.00
+                </strong>
 
             </div>
 
 
+            <div>
 
-            <div class="probability-row">
+                <span>Z</span>
 
-
-                <div class="probability-label">
-
-                    <span>
-                        |1⟩
-                    </span>
-
-                    <strong id="prob1">
-                        0%
-                    </strong>
-
-                </div>
-
-
-                <div class="progress">
-
-                    <div id="bar1"
-                         class="progress-fill"
-                         style="width:0%">
-                    </div>
-
-                </div>
+                <strong id="coordZ">
+                    1.00
+                </strong>
 
             </div>
 
 
-        </section>
+        </div>
 
-        </div> <!-- /singleExplorer -->
-
-
-        <!-- =================================================
-             TWO-QUBIT EXPLORER
-        ================================================== -->
-        <div id="doubleExplorer" class="explorer-view">
-
-            <div class="twoq-intro">
-                <p class="section-label">LAB 02</p>
-                <h2>Two-Qubit Explorer</h2>
-                <p>
-                    Build and transform a two-qubit quantum state using
-                    single-qubit gates and two-qubit operations.
-                </p>
-            </div>
-
-            <div class="twoq-grid">
-
-                <!-- QUBIT CONTROLS -->
-                <section class="panel">
-                    <div class="panel-title">
-                        <div>
-                            <span class="panel-number">01</span>
-                            <h2>Qubit Controls</h2>
-                        </div>
-                    </div>
-
-                    <div class="twoq-qubit-row">
-                        <div class="twoq-control">
-                            <span class="twoq-label">Qubit 1</span>
-                            <div class="basis-buttons">
-                                <button class="basis-btn active" data-q="1" data-value="0"
-                                        onclick="setTwoQubitBasis(1, 0)">|0⟩</button>
-                                <button class="basis-btn" data-q="1" data-value="1"
-                                        onclick="setTwoQubitBasis(1, 1)">|1⟩</button>
-                            </div>
-                        </div>
-
-                        <div class="twoq-control">
-                            <span class="twoq-label">Qubit 2</span>
-                            <div class="basis-buttons">
-                                <button class="basis-btn active" data-q="2" data-value="0"
-                                        onclick="setTwoQubitBasis(2, 0)">|0⟩</button>
-                                <button class="basis-btn" data-q="2" data-value="1"
-                                        onclick="setTwoQubitBasis(2, 1)">|1⟩</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h3 class="subheading">Single-Qubit Operations</h3>
-
-                    <div class="twoq-gate-grid">
-                        <button class="gate-btn" onclick="twoQGate('H1')">
-                            <strong>H₁</strong><small>Hadamard</small>
-                        </button>
-                        <button class="gate-btn" onclick="twoQGate('X1')">
-                            <strong>X₁</strong><small>Pauli-X</small>
-                        </button>
-                        <button class="gate-btn" onclick="twoQGate('Z1')">
-                            <strong>Z₁</strong><small>Pauli-Z</small>
-                        </button>
-                        <button class="gate-btn" onclick="twoQGate('H2')">
-                            <strong>H₂</strong><small>Hadamard</small>
-                        </button>
-                        <button class="gate-btn" onclick="twoQGate('X2')">
-                            <strong>X₂</strong><small>Pauli-X</small>
-                        </button>
-                        <button class="gate-btn" onclick="twoQGate('Z2')">
-                            <strong>Z₂</strong><small>Pauli-Z</small>
-                        </button>
-                    </div>
-
-                    <h3 class="subheading">Two-Qubit Operations</h3>
-
-                    <div class="twoq-gate-grid">
-                        <button class="gate-btn twoq-special" onclick="twoQGate('CNOT')">
-                            <strong>CNOT</strong><small>Q₁ → Q₂</small>
-                        </button>
-                        <button class="gate-btn twoq-special" onclick="twoQGate('CZ')">
-                            <strong>CZ</strong><small>Controlled-Z</small>
-                        </button>
-                        <button class="gate-btn twoq-special" onclick="twoQGate('SWAP')">
-                            <strong>SWAP</strong><small>Exchange</small>
-                        </button>
-                    </div>
-
-                    <button class="primary-btn full-btn" onclick="createTwoQBellState()">
-                        Create Bell State
-                    </button>
-
-                    <button class="reset-btn" onclick="resetTwoQubit()">
-                        ↻ Reset Two Qubits
-                    </button>
-                </section>
-
-
-                <!-- STATE VECTOR -->
-                <section class="panel">
-                    <div class="panel-title">
-                        <div>
-                            <span class="panel-number">02</span>
-                            <h2>Two-Qubit State</h2>
-                        </div>
-                        <span class="live-badge">LIVE</span>
-                    </div>
-
-                    <div class="twoq-state-display">
-                        <span>Current State</span>
-                        <strong id="twoQState">|00⟩</strong>
-                    </div>
-
-                    <div class="twoq-formula">
-                        <span>|ψ⟩ =</span>
-                        <strong id="twoQEquation">|00⟩</strong>
-                    </div>
-
-                    <h3 class="subheading">State Vector</h3>
-
-                    <div class="state-vector-box" id="twoQVector">
-                        <div>[ 1 ]</div>
-                        <div>[ 0 ]</div>
-                        <div>[ 0 ]</div>
-                        <div>[ 0 ]</div>
-                    </div>
-
-                    <div class="twoq-status" id="twoQStatus">
-                        Initial state: |00⟩
-                    </div>
-                </section>
-
-            </div>
-
-
-            <!-- BASIS PROBABILITIES -->
-            <section class="panel">
-                <div class="panel-title">
-                    <div>
-                        <span class="panel-number">03</span>
-                        <h2>Measurement Probabilities</h2>
-                    </div>
-                    <span class="live-badge">LIVE</span>
-                </div>
-
-                <div class="twoq-prob-grid">
-                    <div class="twoq-prob-card">
-                        <div class="twoq-prob-top">
-                            <span>|00⟩</span><strong id="prob00">100%</strong>
-                        </div>
-                        <div class="progress"><div class="progress-fill" id="bar00" style="width:100%"></div></div>
-                    </div>
-
-                    <div class="twoq-prob-card">
-                        <div class="twoq-prob-top">
-                            <span>|01⟩</span><strong id="prob01">0%</strong>
-                        </div>
-                        <div class="progress"><div class="progress-fill" id="bar01" style="width:0%"></div></div>
-                    </div>
-
-                    <div class="twoq-prob-card">
-                        <div class="twoq-prob-top">
-                            <span>|10⟩</span><strong id="prob10">0%</strong>
-                        </div>
-                        <div class="progress"><div class="progress-fill" id="bar10" style="width:0%"></div></div>
-                    </div>
-
-                    <div class="twoq-prob-card">
-                        <div class="twoq-prob-top">
-                            <span>|11⟩</span><strong id="prob11">0%</strong>
-                        </div>
-                        <div class="progress"><div class="progress-fill" id="bar11" style="width:0%"></div></div>
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- CIRCUIT VIEW + ENTANGLEMENT -->
-            <div class="twoq-bottom-grid">
-
-                <section class="panel">
-                    <div class="panel-title">
-                        <div>
-                            <span class="panel-number">04</span>
-                            <h2>Two-Qubit Circuit</h2>
-                        </div>
-                    </div>
-
-                    <div class="twoq-circuit">
-                        <div class="twoq-wire">
-                            <span>q₁</span>
-                            <div class="wire-line"></div>
-                            <div id="q1GateView" class="wire-gate">I</div>
-                        </div>
-
-                        <div class="twoq-wire">
-                            <span>q₂</span>
-                            <div class="wire-line"></div>
-                            <div id="q2GateView" class="wire-gate">I</div>
-                        </div>
-
-                        <div class="cnot-visual" id="cnotVisual">
-                            <span class="control-dot-2q"></span>
-                            <span class="control-line-2q"></span>
-                            <span class="target-plus-2q">⊕</span>
-                        </div>
-                    </div>
-
-                    <p class="twoq-hint">
-                        CNOT uses qubit 1 as the control and qubit 2 as the target.
-                    </p>
-                </section>
-
-
-                <section class="panel">
-                    <div class="panel-title">
-                        <div>
-                            <span class="panel-number">05</span>
-                            <h2>Entanglement</h2>
-                        </div>
-                    </div>
-
-                    <div class="entanglement-meter">
-                        <span>Concurrence</span>
-                        <strong id="concurrenceValue">0.00</strong>
-                    </div>
-
-                    <div class="entanglement-bar">
-                        <div id="concurrenceBar"></div>
-                    </div>
-
-                    <div class="entanglement-result" id="entanglementResult">
-                        Separable State
-                    </div>
-
-                    <p class="twoq-hint">
-                        A concurrence of 1 indicates a maximally entangled
-                        pure two-qubit state, such as a Bell state.
-                    </p>
-                </section>
-
-            </div>
-
-        </div> <!-- /doubleExplorer -->
-
-
-    </main>
+    </section>
 
 </div>
 
 
-<script src="{{ url_for('static', filename='script.js') }}"></script>
 
-</body>
+<!-- =================================================
+     PROBABILITIES
+================================================== -->
 
-</html>
+<section class="panel probability-panel">
 
+
+    <div class="panel-title">
+
+        <div>
+
+            <span class="panel-number">
+                03
+            </span>
+
+            <h2>
+                Measurement Probabilities
+            </h2>
+
+        </div>
+
+        <span class="live-badge">
+            Live
+        </span>
+
+    </div>
+
+
+
+    <div class="probability-row">
+
+
+        <div class="probability-label">
+
+            <span>
+                |0&rang;
+            </span>
+
+            <strong id="prob0">
+                100%
+            </strong>
+
+        </div>
+
+
+        <div class="progress">
+
+            <div id="bar0"
+                 class="progress-fill"
+                 style="width:100%">
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="probability-row">
+
+
+        <div class="probability-label">
+
+            <span>
+                |1&rang;
+            </span>
+
+            <strong id="prob1">
+                0%
+            </strong>
+
+        </div>
+
+
+        <div class="progress">
+
+            <div id="bar1"
+                 class="progress-fill"
+                 style="width:0%">
+            </div>
+
+        </div>
+
+    </div>
+
+
+</section>
+
+</div> <!-- /singleExplorer -->
+
+
+<!-- =================================================
+     TWO-QUBIT EXPLORER
+================================================== -->
+<div id="doubleExplorer" class="explorer-view">
+
+    <div class="twoq-intro">
+        <p class="section-label">Lab 02 · Two Qubits</p>
+        <h2>Two-Qubit Explorer</h2>
+        <p>
+            Build and transform a two-qubit quantum state using
+            single-qubit gates and two-qubit operations.
+        </p>
+    </div>
+
+    <div class="twoq-grid">
+
+        <!-- QUBIT CONTROLS -->
+        <section class="panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">01</span>
+                    <h2>Qubit Controls</h2>
+                </div>
+            </div>
+
+            <div class="twoq-qubit-row">
+                <div class="twoq-control">
+                    <span class="twoq-label">Qubit 1</span>
+                    <div class="basis-buttons">
+                        <button class="basis-btn active" data-q="1" data-value="0"
+                                onclick="setTwoQubitBasis(1, 0)">|0&rang;</button>
+                        <button class="basis-btn" data-q="1" data-value="1"
+                                onclick="setTwoQubitBasis(1, 1)">|1&rang;</button>
+                    </div>
+                </div>
+
+                <div class="twoq-control">
+                    <span class="twoq-label">Qubit 2</span>
+                    <div class="basis-buttons">
+                        <button class="basis-btn active" data-q="2" data-value="0"
+                                onclick="setTwoQubitBasis(2, 0)">|0&rang;</button>
+                        <button class="basis-btn" data-q="2" data-value="1"
+                                onclick="setTwoQubitBasis(2, 1)">|1&rang;</button>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="subheading">Single-Qubit Operations</h3>
+
+            <div class="twoq-gate-grid">
+                <button class="gate-btn" onclick="twoQGate('H1')">
+                    <strong>H&#8321;</strong><small>Hadamard</small>
+                </button>
+                <button class="gate-btn" onclick="twoQGate('X1')">
+                    <strong>X&#8321;</strong><small>Pauli-X</small>
+                </button>
+                <button class="gate-btn" onclick="twoQGate('Z1')">
+                    <strong>Z&#8321;</strong><small>Pauli-Z</small>
+                </button>
+                <button class="gate-btn" onclick="twoQGate('H2')">
+                    <strong>H&#8322;</strong><small>Hadamard</small>
+                </button>
+                <button class="gate-btn" onclick="twoQGate('X2')">
+                    <strong>X&#8322;</strong><small>Pauli-X</small>
+                </button>
+                <button class="gate-btn" onclick="twoQGate('Z2')">
+                    <strong>Z&#8322;</strong><small>Pauli-Z</small>
+                </button>
+            </div>
+
+            <h3 class="subheading">Two-Qubit Operations</h3>
+
+            <div class="twoq-gate-grid">
+                <button class="gate-btn twoq-special" onclick="twoQGate('CNOT')">
+                    <strong>CNOT</strong><small>Q&#8321; &rarr; Q&#8322;</small>
+                </button>
+                <button class="gate-btn twoq-special" onclick="twoQGate('CZ')">
+                    <strong>CZ</strong><small>Controlled-Z</small>
+                </button>
+                <button class="gate-btn twoq-special" onclick="twoQGate('SWAP')">
+                    <strong>SWAP</strong><small>Exchange</small>
+                </button>
+            </div>
+
+            <button class="primary-btn full-btn" onclick="createTwoQBellState()">
+                Create Bell State
+            </button>
+
+            <button class="reset-btn" onclick="resetTwoQubit()">
+                &#8635; Reset Two Qubits
+            </button>
+        </section>
+
+
+        <!-- STATE VECTOR -->
+        <section class="panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">02</span>
+                    <h2>Two-Qubit State</h2>
+                </div>
+                <span class="live-badge">Live</span>
+            </div>
+
+            <div class="twoq-state-display">
+                <span>Current State</span>
+                <strong id="twoQState">|00&rang;</strong>
+            </div>
+
+            <div class="twoq-formula">
+                <span>|&psi;&rang; =</span>
+                <strong id="twoQEquation">|00&rang;</strong>
+            </div>
+
+            <h3 class="subheading">State Vector</h3>
+
+            <div class="state-vector-box" id="twoQVector">
+                <div>[ 1 ]</div>
+                <div>[ 0 ]</div>
+                <div>[ 0 ]</div>
+                <div>[ 0 ]</div>
+            </div>
+
+            <div class="twoq-status" id="twoQStatus">
+                Initial state: |00&rang;
+            </div>
+        </section>
+
+    </div>
+
+
+    <!-- BASIS PROBABILITIES -->
+    <section class="panel">
+        <div class="panel-title">
+            <div>
+                <span class="panel-number">03</span>
+                <h2>Measurement Probabilities</h2>
+            </div>
+            <span class="live-badge">Live</span>
+        </div>
+
+        <div class="twoq-prob-grid">
+            <div class="twoq-prob-card">
+                <div class="twoq-prob-top">
+                    <span>|00&rang;</span><strong id="prob00">100%</strong>
+                </div>
+                <div class="progress"><div class="progress-fill" id="bar00" style="width:100%"></div></div>
+            </div>
+
+            <div class="twoq-prob-card">
+                <div class="twoq-prob-top">
+                    <span>|01&rang;</span><strong id="prob01">0%</strong>
+                </div>
+                <div class="progress"><div class="progress-fill" id="bar01" style="width:0%"></div></div>
+            </div>
+
+            <div class="twoq-prob-card">
+                <div class="twoq-prob-top">
+                    <span>|10&rang;</span><strong id="prob10">0%</strong>
+                </div>
+                <div class="progress"><div class="progress-fill" id="bar10" style="width:0%"></div></div>
+            </div>
+
+            <div class="twoq-prob-card">
+                <div class="twoq-prob-top">
+                    <span>|11&rang;</span><strong id="prob11">0%</strong>
+                </div>
+                <div class="progress"><div class="progress-fill" id="bar11" style="width:0%"></div></div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- CIRCUIT VIEW + ENTANGLEMENT -->
+    <div class="twoq-bottom-grid">
+
+        <section class="panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">04</span>
+                    <h2>Two-Qubit Circuit</h2>
+                </div>
+            </div>
+
+            <div class="twoq-circuit">
+                <div class="twoq-wire">
+                    <span>q&#8321;</span>
+                    <div class="wire-line"></div>
+                    <div id="q1GateView" class="wire-gate">I</div>
+                </div>
+
+                <div class="twoq-wire">
+                    <span>q&#8322;</span>
+                    <div class="wire-line"></div>
+                    <div id="q2GateView" class="wire-gate">I</div>
+                </div>
+
+                <div class="cnot-visual" id="cnotVisual">
+                    <span class="control-dot-2q"></span>
+                    <span class="control-line-2q"></span>
+                    <span class="target-plus-2q">&oplus;</span>
+                </div>
+            </div>
+
+            <p class="twoq-hint">
+                CNOT uses qubit 1 as the control and qubit 2 as the target.
+            </p>
+        </section>
+
+
+        <section class="panel">
+            <div class="panel-title">
+                <div>
+                    <span class="panel-number">05</span>
+                    <h2>Entanglement</h2>
+                </div>
+            </div>
+
+            <div class="entanglement-meter">
+                <span>Concurrence</span>
+                <strong id="concurrenceValue">0.00</strong>
+            </div>
+
+            <div class="entanglement-bar">
+                <div id="concurrenceBar"></div>
+            </div>
+
+            <div class="entanglement-result" id="entanglementResult">
+                Separable State
+            </div>
+
+            <p class="twoq-hint">
+                A concurrence of 1 indicates a maximally entangled
+                pure two-qubit state, such as a Bell state.
+            </p>
+        </section>
+
+    </div>
+
+</div> <!-- /doubleExplorer -->
+
+{% endblock %}
