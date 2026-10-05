@@ -62,9 +62,12 @@ function formatQuantumState(state) {
 
     // The backend uses a dictionary: {"0": {real, imaginary, ...}, ...}
     // Arrays are also accepted for compatibility with older frontend data.
+    // Sort dictionary entries numerically: keys like "10"/"11" are valid
+    // integer-like JS property names, so Object.entries would otherwise
+    // list them before "00"/"01" and scramble the basis order.
     const entries = Array.isArray(state)
         ? state.map((value, index) => [String(index), value])
-        : Object.entries(state);
+        : Object.entries(state).sort((a, b) => Number(a[0]) - Number(b[0]));
 
     if (entries.length === 0) return "0";
 
@@ -88,7 +91,19 @@ function formatQuantumState(state) {
         }
     });
 
-    return terms.join(" + ") || "0";
+    // Join terms, printing a leading minus as a proper " − " separator.
+    let out = "";
+    terms.forEach(term => {
+        if (!out) {
+            out = term;
+        } else if (term.startsWith("-")) {
+            out += " - " + term.slice(1);
+        } else {
+            out += " + " + term;
+        }
+    });
+
+    return out || "0";
 }
 
 
@@ -4330,5 +4345,790 @@ async function initChallengeLab() {
     } catch (err) {
         console.error("Failed to load initial challenge state:", err);
     }
+}
+
+
+/* =====================================================
+   ENTANGLEMENT LAB — TWO-QUBIT STATE ANALYZER
+===================================================== */
+
+const ENTANGLEMENT_INPUT_IDS = [
+    "entRe00", "entIm00",
+    "entRe01", "entIm01",
+    "entRe10", "entIm10",
+    "entRe11", "entIm11"
+];
+
+function readEntanglementInputs() {
+    const values = ENTANGLEMENT_INPUT_IDS.map(id => {
+        const el = document.getElementById(id);
+        if (!el || el.value.trim() === "") return null;
+        const v = Number(el.value);
+        return Number.isFinite(v) ? v : null;
+    });
+
+    if (values.some(v => v === null)) return null;
+    if (values.every(v => v === 0)) return null;
+
+    const amplitudes = [];
+    for (let i = 0; i < 8; i += 2) {
+        amplitudes.push({ real: values[i], imaginary: values[i + 1] });
+    }
+    return amplitudes;
+}
+
+function setEntanglementInputs(values) {
+    ENTANGLEMENT_INPUT_IDS.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (el) el.value = values[index];
+    });
+}
+
+function setEntanglementPreset(name) {
+    const s = 1 / Math.sqrt(2);
+    const presets = {
+        zero:       [1, 0,  0, 0,  0, 0,  0, 0],
+        product:    [s, 0,  s, 0,  0, 0,  0, 0],
+        phi_plus:   [s, 0,  0, 0,  0, 0,  s, 0],
+        phi_minus:  [s, 0,  0, 0,  0, 0, -s, 0],
+        psi_plus:   [0, 0,  s, 0,  s, 0,  0, 0],
+        psi_minus:  [0, 0,  s, 0, -s, 0,  0, 0],
+    };
+    if (!presets[name]) return;
+
+    setEntanglementInputs(presets[name]);
+
+    const msg = document.getElementById("entStateMessage");
+    if (msg) msg.textContent = "Preset loaded. Run the analysis to check its entanglement.";
+}
+
+function analyzeBellState(name) {
+    setEntanglementPreset(name);
+    runEntanglementAnalysis();
+}
+
+async function runEntanglementAnalysis() {
+    const amplitudes = readEntanglementInputs();
+
+    if (!amplitudes) {
+        alert("Enter all eight values (real and imaginary parts of each amplitude), with at least one non-zero value.");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/entanglement/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ amplitudes })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Analysis request failed (${response.status})`);
+        }
+
+        const msg = document.getElementById("entStateMessage");
+        if (msg) msg.textContent = "State normalized and analyzed.";
+
+        updateEntanglementAnalysis(data);
+    } catch (error) {
+        console.error(error);
+        alert(`Entanglement Error: ${error.message}`);
+    }
+}
+
+function updateEntanglementAnalysis(data) {
+    const c = Number(data.concurrence ?? 0);
+
+    const value = document.getElementById("entConcurrence");
+    if (value) value.textContent = c.toFixed(3);
+
+    const bar = document.getElementById("entConcurrenceBar");
+    if (bar) bar.style.width = `${(c * 100).toFixed(1)}%`;
+
+    const badge = document.getElementById("entClassBadge");
+    const result = document.getElementById("entClassification");
+
+    let badgeClass = "operator-badge neutral";
+    let badgeText = "Awaiting analysis";
+    let resultText = "";
+
+    if (data.classification === "maximally_entangled") {
+        badgeClass = "operator-badge highlight";
+        badgeText = "Maximally entangled";
+        resultText = "Maximally Entangled — as entangled as a Bell state (C ≈ 1).";
+    } else if (data.classification === "separable") {
+        badgeClass = "operator-badge success";
+        badgeText = "Separable";
+        resultText = "Separable State — not entangled; it factors into a product of two single-qubit states (C ≈ 0).";
+    } else if (data.classification === "partially_entangled") {
+        badgeClass = "operator-badge warning";
+        badgeText = "Partially entangled";
+        resultText = `Partially Entangled — between separable and maximal (C = ${c.toFixed(3)}).`;
+    }
+
+    if (badge) {
+        badge.className = badgeClass;
+        badge.textContent = badgeText;
+    }
+    if (result) result.textContent = resultText;
+
+    // Normalized state, written in ket form.
+    const ket = document.getElementById("entKetDisplay");
+    if (ket && data.state) ket.textContent = formatQuantumState(data.state);
+
+    // Per-basis amplitudes and measurement probabilities.
+    ["00", "01", "10", "11"].forEach(basis => {
+        const amp = data.state?.[basis];
+
+        const ampEl = document.getElementById(`entAmp${basis}`);
+        if (ampEl && amp) ampEl.textContent = formatComplexCoefficient(amp) || "0";
+
+        const p = Math.max(0, Math.min(1, Number(amp?.probability ?? 0)));
+        const pct = p * 100;
+
+        const probEl = document.getElementById(`entProb${basis}`);
+        if (probEl) probEl.textContent = `${pct.toFixed(1)}%`;
+
+        const barEl = document.getElementById(`entBar${basis}`);
+        if (barEl) barEl.style.width = `${pct}%`;
+    });
+}
+
+
+/* =====================================================
+   QKD LAB — BB84 PROTOCOL
+===================================================== */
+
+let qkdTranscript = null;
+let qkdCursor = 0;
+let qkdTimer = null;
+let qkdCount = 16;
+let qkdEveEnabled = false;
+let qkdRunToken = 0;
+let qkdFinalized = false;
+
+const QKD_STAGE_ORDER = ["prepare", "transmit", "measure", "sift", "verify", "key"];
+
+function setQKDCount(n) {
+    qkdCount = n;
+    document.querySelectorAll(".qkd-count-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.textContent.trim() === String(n));
+    });
+    resetQKD();
+}
+
+function toggleQkdEve() {
+    const box = document.getElementById("qkdEveToggle");
+    qkdEveEnabled = Boolean(box?.checked);
+
+    const label = document.getElementById("qkdEveLabel");
+    if (label) label.textContent = qkdEveEnabled ? "Eve ON" : "Eve OFF";
+
+    const station = document.getElementById("qkdEveStation");
+    if (station) station.classList.toggle("off", !qkdEveEnabled);
+
+    const role = document.getElementById("qkdEveStationRole");
+    if (role) role.textContent = qkdEveEnabled ? "intercepting" : "offline";
+
+    const card = document.getElementById("qkdEveCard");
+    if (card) card.classList.toggle("off", !qkdEveEnabled);
+
+    resetQKD();
+}
+
+async function fetchQKDTranscript() {
+    const response = await fetch("/api/qkd/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ count: qkdCount, eve: qkdEveEnabled })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+        throw new Error(data.error || `Simulation request failed (${response.status})`);
+    }
+
+    return data;
+}
+
+function stopQKDTimer() {
+    if (qkdTimer) {
+        clearInterval(qkdTimer);
+        qkdTimer = null;
+    }
+    const runBtn = document.getElementById("qkdRunBtn");
+    if (runBtn) runBtn.disabled = false;
+}
+
+async function runQKDSimulation() {
+    stopQKDTimer();
+
+    try {
+        qkdTranscript = await fetchQKDTranscript();
+    } catch (error) {
+        console.error(error);
+        alert(`QKD Error: ${error.message}`);
+        return;
+    }
+
+    clearQKDDisplays();
+    qkdCursor = 0;
+
+    const runBtn = document.getElementById("qkdRunBtn");
+    if (runBtn) runBtn.disabled = true;
+
+    // One interval covers the full physical journey of a single qubit.
+    const interval = qkdEveEnabled ? 3400 : 2000;
+
+    // First qubit starts immediately; the interval handles the rest.
+    if (advanceQKD()) {
+        qkdTimer = setInterval(() => {
+            if (!advanceQKD()) stopQKDTimer();
+        }, interval);
+    }
+}
+
+async function stepQKD() {
+    stopQKDTimer();
+
+    if (!qkdTranscript) {
+        try {
+            qkdTranscript = await fetchQKDTranscript();
+        } catch (error) {
+            console.error(error);
+            alert(`QKD Error: ${error.message}`);
+            return;
+        }
+        clearQKDDisplays();
+        qkdCursor = 0;
+    }
+
+    advanceQKD();
+}
+
+function advanceQKD() {
+    if (!qkdTranscript || qkdFinalized) return false;
+
+    const items = qkdTranscript.qubits || [];
+
+    if (qkdCursor < items.length) {
+        revealQKDItem(items[qkdCursor], items.length);
+        qkdCursor += 1;
+        return true;
+    }
+
+    qkdFinalized = true;
+    finalizeQKD();
+    return false;
+}
+
+function setQKDStage(name) {
+    const order = QKD_STAGE_ORDER.indexOf(name);
+    document.querySelectorAll("#qkdStages .qkd-stage").forEach(stage => {
+        const idx = QKD_STAGE_ORDER.indexOf(stage.dataset.stage);
+        stage.classList.toggle("active", idx === order);
+        stage.classList.toggle("done", idx < order);
+    });
+}
+
+function qkdKet(payload) {
+    return payload?.dictionary ? formatQuantumState(payload.dictionary) : "—";
+}
+
+function qkdGatesText(gates) {
+    return gates && gates.length ? gates.join(" → ") : "I";
+}
+
+/* Photon travel time — keep in sync with .qkd-photon's CSS transition. */
+const QKD_TRAVEL_MS = 1000;
+
+function revealQKDItem(q, total) {
+    // Invalidate this item's pending timeouts if a reset or a new
+    // run happens before they fire.
+    const token = qkdRunToken;
+    const stillCurrent = () => token === qkdRunToken;
+
+    const set = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
+
+    const status = document.getElementById("qkdChannelStatus");
+    if (status) status.textContent = `Qubit ${q.index + 1} of ${total}`;
+
+    // -- Prepare: a fresh photon appears at Alice holding the prepared state.
+    setQKDStage("prepare");
+    const photon = document.getElementById("qkdPhoton");
+    const photonKet = document.getElementById("qkdPhotonKet");
+
+    // Reset to Alice instantly — a backward glide would be a different
+    // (wrong) physical journey.
+    if (photon) {
+        photon.classList.add("no-anim");
+        photon.style.left = "8%";
+        void photon.offsetWidth; // flush the transition before re-enabling
+        photon.classList.remove("no-anim");
+    }
+    if (photonKet) photonKet.textContent = q.prepared?.symbol || qkdKet(q.prepared);
+
+    set("qkdAliceBasis", q.alice_basis + " basis");
+    set("qkdAliceBit", q.alice_bit);
+    set("qkdAliceBasisName", q.alice_basis);
+    set("qkdAliceGates", qkdGatesText(q.alice_gates));
+    set("qkdAliceKet", qkdKet(q.prepared));
+
+    // Timeline: depart → (arrive Eve → Eve intercepts → depart Eve) → arrive Bob → measure.
+    const departAt = 500;
+    const eveArriveAt = departAt + QKD_TRAVEL_MS;
+    const eveDepartAt = eveArriveAt + 350;
+    const bobArriveAt = (q.eve ? eveDepartAt : departAt) + QKD_TRAVEL_MS;
+    const measureAt = bobArriveAt + 100;
+
+    // -- Transmit: the photon physically travels the channel.
+    setTimeout(() => {
+        if (!stillCurrent()) return;
+        setQKDStage("transmit");
+        if (photon) photon.style.left = q.eve ? "50%" : "92%";
+    }, departAt);
+
+    if (q.eve) {
+        // Eve intercepts exactly when the photon reaches her station.
+        setTimeout(() => {
+            if (!stillCurrent()) return;
+            set("qkdEveBasis", q.eve.basis + " basis");
+            set("qkdEveBasisName", q.eve.basis);
+            set("qkdEveResult", q.eve.result);
+            set("qkdEveGates", qkdGatesText(q.eve.gates));
+            set("qkdEveKet", qkdKet(q.eve.resent));
+            if (photonKet) photonKet.textContent = q.eve.resent?.symbol || qkdKet(q.eve.resent);
+        }, eveArriveAt);
+
+        // ...and resends the collapsed state onward to Bob.
+        setTimeout(() => {
+            if (!stillCurrent()) return;
+            if (photon) photon.style.left = "92%";
+        }, eveDepartAt);
+    }
+
+    // -- Measure: Bob reads the photon only once it has arrived.
+    setTimeout(() => {
+        if (!stillCurrent()) return;
+        setQKDStage("measure");
+        set("qkdBobBasis", q.bob_basis + " basis");
+        set("qkdBobBasisName", q.bob_basis);
+        set("qkdBobGates", qkdGatesText(q.bob_gates));
+        set("qkdBobKet", q.eve ? qkdKet(q.eve.resent) : qkdKet(q.prepared));
+        set("qkdBobResult", q.bob_result);
+
+        renderQKDWire(q);
+        appendQKDLogRow(q);
+
+        const badge = document.getElementById("qkdLogCount");
+        if (badge) badge.textContent = `${q.index + 1} qubit${q.index === 0 ? "" : "s"}`;
+    }, measureAt);
+}
+
+function renderQKDWire(q) {
+    const wire = document.getElementById("qkdCircuitWire");
+    if (!wire) return;
+
+    const chips = [];
+    const aliceGates = q.alice_gates.length ? q.alice_gates : ["I"];
+    aliceGates.forEach(g => chips.push(`<div class="circuit-gate-item"><strong>${g}</strong><small>Kumar</small></div>`));
+
+    if (q.eve) {
+        chips.push(`<div class="circuit-gate-item qkd-chip-eve"><strong>${q.eve.basis}</strong><small>Eve</small></div>`);
+    }
+
+    const bobGates = q.bob_gates.length ? q.bob_gates : ["I"];
+    bobGates.forEach(g => chips.push(`<div class="circuit-gate-item"><strong>${g}</strong><small>Tarun</small></div>`));
+
+    chips.push(`<div class="circuit-gate-item qkd-chip-measure"><strong>&#9634;</strong><small>${q.bob_result}</small></div>`);
+
+    wire.innerHTML = chips.join("");
+}
+
+function appendQKDLogRow(q) {
+    const body = document.getElementById("qkdLogBody");
+    if (!body) return;
+
+    const empty = body.querySelector(".table-empty");
+    if (empty) empty.parentElement.remove();
+
+    const tr = document.createElement("tr");
+    tr.className = q.kept ? "qkd-row-kept" : "qkd-row-lost";
+    tr.innerHTML = `
+        <td><strong>#${q.index + 1}</strong></td>
+        <td class="qkd-mono">${q.alice_bit}</td>
+        <td>${q.alice_basis}</td>
+        <td class="qkd-mono">${qkdGatesText(q.alice_gates)}</td>
+        <td>${q.eve ? q.eve.basis : "&mdash;"}</td>
+        <td class="qkd-mono">${q.eve ? q.eve.result : "&mdash;"}</td>
+        <td>${q.bob_basis}</td>
+        <td class="qkd-mono">${qkdGatesText(q.bob_gates)}</td>
+        <td class="qkd-mono">${q.bob_result}</td>
+        <td>${q.kept ? "&#10003; keep" : "&#10007; drop"}</td>
+    `;
+    body.appendChild(tr);
+}
+
+function finalizeQKD() {
+    if (!qkdTranscript) return;
+
+    const transcript = qkdTranscript;
+    const summary = transcript.summary;
+    const sample = summary.sample;
+    const kept = summary.kept;
+    const sent = summary.sent;
+
+    const set = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
+
+    // ---- Stage 04: SIFT — animated public basis comparison.
+    setQKDStage("sift");
+
+    const siftSummary = document.getElementById("qkdSiftSummary");
+    if (siftSummary) {
+        siftSummary.textContent = kept
+            ? `Bases compared publicly: ${kept} of ${sent} qubits had matching bases and form the sifted key; the rest are discarded.`
+            : `No matching bases in this round — sifted key is empty. Run the simulation again.`;
+    }
+
+    const siftAnimTime = animateQKDSift(transcript);
+
+    const samplePositions = new Set(sample.positions || []);
+    const samplePosToError = new Set();
+    (sample.positions || []).forEach((p, i) => {
+        if (sample.alice[i] !== sample.bob[i]) samplePosToError.add(p);
+    });
+
+    const chip = (bit, isSample, isError) => {
+        let cls = "qkd-bit";
+        if (isSample) cls += " sample";
+        if (isError) cls += " error";
+        return `<span class="${cls}">${bit}</span>`;
+    };
+
+    // Reveal the sifted key once the comparison has resolved.
+    setTimeout(() => {
+        if (qkdTranscript !== transcript) return;
+
+        const aliceBits = document.getElementById("qkdAliceKey");
+        const bobBits = document.getElementById("qkdBobKey");
+
+        if (aliceBits && bobBits) {
+            if (!kept) {
+                aliceBits.innerHTML = '<span class="qkd-key-empty">&mdash;</span>';
+                bobBits.innerHTML = '<span class="qkd-key-empty">&mdash;</span>';
+            } else {
+                aliceBits.innerHTML = summary.alice_key.map((bit, i) =>
+                    chip(bit, samplePositions.has(i), samplePosToError.has(i))
+                ).join("");
+                bobBits.innerHTML = summary.bob_key.map((bit, i) =>
+                    chip(bit, samplePositions.has(i), samplePosToError.has(i))
+                ).join("");
+            }
+        }
+
+        set("qkdKeyLength", kept);
+    }, siftAnimTime);
+
+    // ---- Stage 05: VERIFY — reveal the sample and compute the error rate.
+    setTimeout(() => {
+        if (qkdTranscript !== transcript) return;
+
+        setQKDStage("verify");
+
+        set("qkdSampleSize", sample.size || 0);
+        set("qkdSampleErrors", sample.size ? sample.errors : "—");
+
+        updateQKDInferences(transcript);
+
+        const thresholdPct = Math.round((summary.threshold ?? 0.15) * 100);
+        set("qkdThresholdInfo", `Tolerance ≤ ${thresholdPct}%`);
+
+        const rateEl = document.getElementById("qkdErrorRate");
+        if (rateEl) {
+            rateEl.textContent = sample.error_rate === null
+                ? "—"
+                : `${(sample.error_rate * 100).toFixed(1)}%`;
+        }
+
+        const sampleInfo = document.getElementById("qkdSampleInfo");
+        if (sampleInfo) {
+            sampleInfo.textContent = sample.size
+                ? `${sample.size} of ${kept} sifted bits revealed`
+                : "Nothing to reveal";
+        }
+
+        // ---- Stage 06: KEY — verdict.
+        setTimeout(() => {
+            if (qkdTranscript !== transcript) return;
+
+            setQKDStage("key");
+
+            const verdict = document.getElementById("qkdVerdict");
+            const verdictTitle = document.getElementById("qkdVerdictTitle");
+            const verdictText = document.getElementById("qkdVerdictText");
+
+            if (verdict && verdictTitle && verdictText) {
+                verdict.classList.remove("accepted", "rejected");
+
+                if (!kept) {
+                    verdictTitle.textContent = "No key this round";
+                    verdictText.textContent = "Kumar and Tarun never chose the same basis, so there is nothing to verify. Run the simulation again.";
+                } else if (summary.accepted) {
+                    verdict.classList.add("accepted");
+                    verdictTitle.textContent = "✓ Key accepted";
+                    verdictText.textContent =
+                        `Sample error rate ${(sample.error_rate * 100).toFixed(1)}% is within the ${thresholdPct}% tolerance — ` +
+                        `the channel looks clean. The unrevealed sifted bits become the shared secret key.`;
+                } else {
+                    verdict.classList.add("rejected");
+                    verdictTitle.textContent = "⚠ Eavesdropping detected — key rejected";
+                    verdictText.textContent =
+                        `Sample error rate ${(sample.error_rate * 100).toFixed(1)}% exceeds the ${thresholdPct}% tolerance. ` +
+                        `Eve's random-basis measurements disturbed the qubits, injecting roughly 25% errors. The key is discarded.`;
+                }
+            }
+        }, 1200);
+    }, siftAnimTime + 800);
+}
+
+/* Animated public basis comparison used during the SIFT stage. */
+function animateQKDSift(transcript) {
+    const grid = document.getElementById("qkdCompareGrid");
+    if (!grid) return 0;
+
+    const qubits = transcript.qubits || [];
+    const count = qubits.length;
+    if (!count) return 0;
+
+    // Slow, readable pacing regardless of count.
+    const step = Math.max(110, Math.min(320, Math.floor(4500 / count)));
+    const resolveDelay = Math.max(90, Math.floor(step * 0.55));
+
+    grid.innerHTML = "";
+
+    const makeRow = (label, labelClass) => {
+        const row = document.createElement("div");
+        row.className = "qkd-compare-row";
+
+        const lab = document.createElement("span");
+        lab.className = `qkd-compare-label ${labelClass}`;
+        lab.textContent = label;
+
+        const cells = document.createElement("div");
+        cells.className = "qkd-compare-cells";
+
+        row.appendChild(lab);
+        row.appendChild(cells);
+        grid.appendChild(row);
+        return cells;
+    };
+
+    const idxCells = makeRow("Qubit", "idx");
+    const aliceCells = makeRow("Kumar's basis", "alice");
+    const bobCells = makeRow("Tarun's basis", "bob");
+    const verdictCells = makeRow("Bases match?", "verdict");
+
+    qubits.forEach((q, i) => {
+        const idx = document.createElement("span");
+        idx.className = "qkd-bcell idx";
+        idx.textContent = i + 1;
+        idxCells.appendChild(idx);
+
+        const a = document.createElement("span");
+        a.className = "qkd-bcell";
+        a.textContent = q.alice_basis;
+        aliceCells.appendChild(a);
+
+        const b = document.createElement("span");
+        b.className = "qkd-bcell";
+        b.textContent = q.bob_basis;
+        bobCells.appendChild(b);
+
+        const v = document.createElement("span");
+        v.className = "qkd-bcell verdict";
+        verdictCells.appendChild(v);
+    });
+
+    qubits.forEach((q, i) => {
+        // Slide a brass "checking" marker over each column...
+        setTimeout(() => {
+            if (qkdTranscript !== transcript) return;
+            [aliceCells, bobCells, verdictCells].forEach(row =>
+                row.children[i].classList.add("checking"));
+        }, i * step);
+
+        // ...then resolve it as a match (kept) or a mismatch (dropped).
+        setTimeout(() => {
+            if (qkdTranscript !== transcript) return;
+
+            const aCell = aliceCells.children[i];
+            const bCell = bobCells.children[i];
+            const vCell = verdictCells.children[i];
+
+            [aCell, bCell, vCell].forEach(cell => cell.classList.remove("checking"));
+
+            if (q.kept) {
+                aCell.classList.add("match");
+                bCell.classList.add("match");
+                vCell.classList.add("match");
+                vCell.textContent = "✓";
+            } else {
+                aCell.classList.add("drop");
+                bCell.classList.add("drop");
+                vCell.classList.add("drop");
+                vCell.textContent = "✗";
+            }
+        }, i * step + resolveDelay);
+    });
+
+    return count * step + 800;
+}
+
+/* Rewrite the inference points with the numbers of the run just completed. */
+const qkdNoteDefaultTexts = {};
+
+function captureQKDInferences() {
+    for (let n = 1; n <= 5; n++) {
+        const el = document.getElementById("qkdNote" + n);
+        if (el && !qkdNoteDefaultTexts[n]) {
+            qkdNoteDefaultTexts[n] = el.textContent.trim().replace(/\s+/g, " ");
+        }
+    }
+}
+
+function resetQKDInferences() {
+    captureQKDInferences();
+    for (let n = 1; n <= 5; n++) {
+        const el = document.getElementById("qkdNote" + n);
+        if (el && qkdNoteDefaultTexts[n]) el.textContent = qkdNoteDefaultTexts[n];
+    }
+}
+
+function updateQKDInferences(transcript) {
+    captureQKDInferences();
+
+    const summary = transcript.summary;
+    const sample = summary.sample;
+    const eve = Boolean(transcript.params?.eve);
+    const sent = summary.sent;
+    const kept = summary.kept;
+    const qber = sample.error_rate === null
+        ? null
+        : Number((sample.error_rate * 100).toFixed(1));
+    const qberText = qber === null ? "—" : `${qber}%`;
+    const keptPct = sent ? Math.round((kept / sent) * 100) : 0;
+    const thresholdPct = Math.round((summary.threshold ?? 0.15) * 100);
+
+    const setNote = (n, text) => {
+        const el = document.getElementById("qkdNote" + n);
+        if (el) el.textContent = text;
+    };
+
+    if (!kept) {
+        setNote(1, "Observed this run: no matching bases at all — Kumar and Tarun never agreed, so there was nothing to verify. This is rare bad luck; rerun the simulation.");
+        setNote(2, "With zero sifted bits, no error rate could be measured this round.");
+        setNote(3, `Observed this run: 0 of ${sent} qubits kept (0%) — an unlucky draw far from the expected 50%.`);
+        setNote(4, `At only ${sent} qubits, empty rounds like this can happen. More qubits smooth the statistics out.`);
+        setNote(5, "Verdict this run: no key — the protocol aborts and simply tries again.");
+        return;
+    }
+
+    if (eve) {
+        setNote(1, summary.accepted
+            ? `Observed this run: Eve intercepted all ${sent} qubits, but the small sample (${sample.size} bit${sample.size === 1 ? "" : "s"}) showed ${qberText} errors — she slipped through by luck this time.`
+            : `Observed this run: Eve intercepted every one of the ${sent} qubits — and the revealed sample exposed her, with a measured error rate of ${qberText}.`);
+        setNote(2, `This run she caused ${sample.errors} error(s) in the ${sample.size}-bit sample (${qberText}) — on average she leaves the ≈25% signature: wrong basis half the time, randomizing Tarun half of that (0.5 × 0.5 = 0.25).`);
+    } else {
+        setNote(1, `Observed this run: with Eve off, Kumar's and Tarun's sifted keys matched bit-for-bit — measured error rate ${qberText}.`);
+        setNote(2, "No interception occurred, so nothing disturbed the qubits. Turn Eve on and rerun — her wrong-basis guesses will inject ≈25% errors.");
+    }
+
+    setNote(3, `Observed this run: ${kept} of ${sent} qubits had matching bases (${keptPct}%) — close to the 50% expected from two independent random basis choices.`);
+
+    setNote(4, sent >= 16
+        ? `At ${sent} qubits, the measured ${qberText} is a statistically clear signal — short 4-qubit runs can still be fooled by luck.`
+        : `At only ${sent} qubits, the measured ${qberText} is noisy — rerun, or raise the count to 32 and watch the value settle.`);
+
+    setNote(5, summary.accepted
+        ? `Verdict this run: key accepted — ${qberText} sits within the ${thresholdPct}% tolerance, so the unrevealed sifted bits are safe to use.`
+        : `Verdict this run: key rejected — ${qberText} exceeds the ${thresholdPct}% tolerance, exactly the fingerprint of an intercept-resend attack.`);
+}
+
+function clearQKDDisplays() {
+    // Any timeout captured before this point is now stale.
+    qkdRunToken += 1;
+    qkdFinalized = false;
+
+    const set = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
+
+    ["qkdAliceBasis", "qkdAliceBit", "qkdAliceBasisName", "qkdAliceGates", "qkdAliceKet",
+     "qkdEveBasis", "qkdEveBasisName", "qkdEveResult", "qkdEveGates", "qkdEveKet",
+     "qkdBobBasis", "qkdBobBasisName", "qkdBobGates", "qkdBobKet", "qkdBobResult",
+     "qkdSampleSize", "qkdSampleErrors", "qkdErrorRate", "qkdKeyLength"
+    ].forEach(id => set(id, "—"));
+
+    const photon = document.getElementById("qkdPhoton");
+    if (photon) photon.style.left = "8%";
+    set("qkdPhotonKet", "|0⟩");
+
+    set("qkdChannelStatus", "No transmission yet");
+
+    const wire = document.getElementById("qkdCircuitWire");
+    if (wire) wire.innerHTML = '<span class="empty-circuit">Step or run the simulation to inspect each qubit.</span>';
+
+    const body = document.getElementById("qkdLogBody");
+    if (body) body.innerHTML = '<tr><td colspan="10" class="table-empty">No qubits transmitted yet.</td></tr>';
+
+    const badge = document.getElementById("qkdLogCount");
+    if (badge) badge.textContent = "0 qubits";
+
+    const siftSummary = document.getElementById("qkdSiftSummary");
+    if (siftSummary) siftSummary.textContent = "Run the simulation to compare bases and build the sifted key.";
+
+    const compareGrid = document.getElementById("qkdCompareGrid");
+    if (compareGrid) compareGrid.innerHTML = '<span class="qkd-compare-empty">The basis comparison will appear here after transmission.</span>';
+
+    resetQKDInferences();
+
+    const aliceBits = document.getElementById("qkdAliceKey");
+    if (aliceBits) aliceBits.innerHTML = '<span class="qkd-key-empty">&mdash;</span>';
+    const bobBits = document.getElementById("qkdBobKey");
+    if (bobBits) bobBits.innerHTML = '<span class="qkd-key-empty">&mdash;</span>';
+
+    const verdict = document.getElementById("qkdVerdict");
+    if (verdict) verdict.classList.remove("accepted", "rejected");
+    set("qkdVerdictTitle", "Awaiting verification");
+    set("qkdVerdictText",
+        "After sifting, Kumar and Tarun publicly reveal a sample of their key bits. " +
+        "A low error rate means the channel was clean; roughly 25% errors is the signature of Eve measuring every qubit in a random basis.");
+
+    set("qkdSampleInfo", "Half of the sifted key");
+    set("qkdThresholdInfo", "Tolerance ≤ 15%");
+
+    document.querySelectorAll("#qkdStages .qkd-stage").forEach(stage => {
+        stage.classList.remove("active", "done");
+    });
+}
+
+function resetQKD() {
+    stopQKDTimer();
+    qkdTranscript = null;
+    qkdCursor = 0;
+    clearQKDDisplays();
 }
 

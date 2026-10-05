@@ -6,6 +6,7 @@ from flask import Flask, jsonify, render_template, request, session
 from bloch import bloch_coordinates
 from measurement import measure_many, measurement_percentages
 from operator_lab import analyze_operator
+from qkd import run_bb84
 from simulator import apply_named_gate, probabilities, state_to_dictionary
 from state_challenge import (
     create_custom_challenge,
@@ -80,6 +81,29 @@ def operator_lab_page():
 @app.route("/game")
 def challenge_page():
     return render_template("challenge.html")
+
+
+@app.route("/qkd")
+def qkd_page():
+    return render_template("qkd.html")
+
+
+# =========================================================
+# QUANTUM KEY DISTRIBUTION (BB84)
+# =========================================================
+
+@app.route("/api/qkd/run", methods=["POST"])
+def qkd_run_api():
+    try:
+        data = request.get_json(silent=True) or {}
+        count = data.get("count", 16)
+        eve = bool(data.get("eve", False))
+        return jsonify({"success": True, **run_bb84(count, eve)})
+    except Exception as error:
+        return jsonify({
+            "success": False,
+            "error": str(error),
+        }), 400
 
 
 # =========================================================
@@ -676,6 +700,71 @@ def entanglement_api():
             "state": amplitudes,
             "probabilities": (np.abs(state) ** 2).tolist(),
             "entangled": True,
+        })
+    except Exception as error:
+        return jsonify({
+            "success": False,
+            "error": str(error),
+        }), 400
+
+
+# =========================================================
+# ENTANGLEMENT ANALYSIS API
+# =========================================================
+
+@app.route("/api/entanglement/analyze", methods=["POST"])
+def entanglement_analyze_api():
+    try:
+        data = request.get_json(silent=True) or {}
+        raw = data.get("amplitudes")
+
+        if not isinstance(raw, list) or len(raw) != 4:
+            raise ValueError("Provide exactly four amplitudes for |00⟩, |01⟩, |10⟩ and |11⟩.")
+
+        amplitudes = []
+        for item in raw:
+            if not isinstance(item, dict):
+                raise ValueError("Each amplitude must contain real and imaginary values.")
+            real = float(item.get("real", 0))
+            imaginary = float(item.get("imaginary", 0))
+            if not np.isfinite(real) or not np.isfinite(imaginary):
+                raise ValueError("Amplitudes must be finite numbers.")
+            amplitudes.append(complex(real, imaginary))
+
+        state = np.array(amplitudes, dtype=complex)
+        norm = np.linalg.norm(state)
+        if norm < 1e-12:
+            raise ValueError("The two-qubit state vector must be non-zero.")
+        state = state / norm
+
+        # Wootters concurrence for a pure two-qubit state
+        # |ψ⟩ = a|00⟩ + b|01⟩ + c|10⟩ + d|11⟩  →  C = 2|ad − bc|
+        a, b, c, d = state
+        concurrence = float(min(1.0, 2 * abs(a * d - b * c)))
+
+        if concurrence >= 0.999:
+            classification = "maximally_entangled"
+        elif concurrence <= 0.001:
+            classification = "separable"
+        else:
+            classification = "partially_entangled"
+
+        basis_states = ["00", "01", "10", "11"]
+        serialized = {}
+        for basis, amplitude in zip(basis_states, state):
+            serialized[basis] = {
+                "real": float(amplitude.real),
+                "imaginary": float(amplitude.imag),
+                "probability": float(abs(amplitude) ** 2),
+            }
+
+        return jsonify({
+            "success": True,
+            "concurrence": concurrence,
+            "classification": classification,
+            "state": serialized,
+            "probabilities": (np.abs(state) ** 2).tolist(),
+            "normalized": True,
         })
     except Exception as error:
         return jsonify({

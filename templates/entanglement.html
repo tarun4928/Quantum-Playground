@@ -8,138 +8,271 @@
     <p class="section-label">Lab 05 · Entanglement</p>
     <h1>Entanglement Lab</h1>
     <p>
-        Explore two-qubit systems and discover
-        the strange correlations of quantum entanglement.
+        Two qubits are <strong>entangled</strong> when their joint state cannot be written as a
+        product of two individual qubit states. Measuring one qubit then fixes the outcome
+        of the other, no matter how far apart they are. Enter any two-qubit state below and
+        the lab measures exactly how entangled it is.
     </p>
 </div>
 
 
+<!-- =========================================
+     SECTION 1: DEFINE THE TWO-QUBIT STATE
+========================================== -->
+
 <section class="panel">
 
     <div class="panel-title">
-
         <div>
             <span class="panel-number">01</span>
-            <h2>Bell State Circuit</h2>
+            <h2>Define the Two-Qubit State</h2>
+        </div>
+        <span class="panel-subtitle">4 &times; 1 complex column vector</span>
+    </div>
+
+    <div class="ent-equation-row">
+        |&psi;&rang; = &alpha;|00&rang; + &beta;|01&rang; + &gamma;|10&rang; + &delta;|11&rang;
+    </div>
+
+    <div class="ent-state-grid">
+
+        <div class="ent-amp-group">
+            <span class="ent-amp-label">&alpha; &nbsp;|00&rang;</span>
+            <div class="ent-amp-inputs">
+                <div>
+                    <label class="operator-input-label" for="entRe00">Re(&alpha;)</label>
+                    <input id="entRe00" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+                <div>
+                    <label class="operator-input-label" for="entIm00">Im(&alpha;)</label>
+                    <input id="entIm00" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="ent-amp-group">
+            <span class="ent-amp-label">&beta; &nbsp;|01&rang;</span>
+            <div class="ent-amp-inputs">
+                <div>
+                    <label class="operator-input-label" for="entRe01">Re(&beta;)</label>
+                    <input id="entRe01" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+                <div>
+                    <label class="operator-input-label" for="entIm01">Im(&beta;)</label>
+                    <input id="entIm01" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="ent-amp-group">
+            <span class="ent-amp-label">&gamma; &nbsp;|10&rang;</span>
+            <div class="ent-amp-inputs">
+                <div>
+                    <label class="operator-input-label" for="entRe10">Re(&gamma;)</label>
+                    <input id="entRe10" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+                <div>
+                    <label class="operator-input-label" for="entIm10">Im(&gamma;)</label>
+                    <input id="entIm10" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="ent-amp-group">
+            <span class="ent-amp-label">&delta; &nbsp;|11&rang;</span>
+            <div class="ent-amp-inputs">
+                <div>
+                    <label class="operator-input-label" for="entRe11">Re(&delta;)</label>
+                    <input id="entRe11" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+                <div>
+                    <label class="operator-input-label" for="entIm11">Im(&delta;)</label>
+                    <input id="entIm11" class="operator-input" type="number" step="any" placeholder="0">
+                </div>
+            </div>
         </div>
 
     </div>
 
-
-    <div class="entanglement-circuit">
-
-        <div class="entangle-wire">
-
-            <span>q&#8320;</span>
-
-            <div class="gate-box">
-                H
-            </div>
-
-            <div class="control-dot">
-                &#9679;
-            </div>
-
-            <div class="connection-line"></div>
-
-        </div>
-
-
-        <div class="entangle-wire">
-
-            <span>q&#8321;</span>
-
-            <div class="empty-gate"></div>
-
-            <div class="target-box">
-                X
-            </div>
-
-        </div>
-
+    <div class="preset-row">
+        <span>Quick states:</span>
+        <button type="button" class="preset-btn" onclick="setEntanglementPreset('zero')">|00&rang;</button>
+        <button type="button" class="preset-btn" onclick="setEntanglementPreset('product')">|+0&rang;</button>
+        <button type="button" class="preset-btn" onclick="setEntanglementPreset('phi_plus')">&Phi;<sup>+</sup></button>
+        <button type="button" class="preset-btn" onclick="setEntanglementPreset('phi_minus')">&Phi;<sup>&minus;</sup></button>
+        <button type="button" class="preset-btn" onclick="setEntanglementPreset('psi_plus')">&Psi;<sup>+</sup></button>
+        <button type="button" class="preset-btn" onclick="setEntanglementPreset('psi_minus')">&Psi;<sup>&minus;</sup></button>
     </div>
 
+    <p class="operator-help">
+        Enter any non-zero four-component state. The engine normalizes it before analysis,
+        so overall scale does not matter.
+    </p>
 
-    <button class="primary-btn"
-            onclick="createBellState()">
-
-        Create Bell State
-
+    <button class="primary-btn full-btn" onclick="runEntanglementAnalysis()">
+        Analyze Entanglement
     </button>
+
+    <div id="entStateMessage" class="initial-state-message">
+        Fill in all eight values, then run the analysis.
+    </div>
 
 </section>
 
 
-<div class="workspace-grid">
+<!-- =========================================
+     SECTION 2: ANALYSIS
+========================================== -->
 
-    <section class="panel">
+<section class="panel">
 
-        <div class="panel-title">
-            <div>
-                <span class="panel-number">02</span>
-                <h2>State Amplitudes</h2>
-            </div>
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">02</span>
+            <h2>Entanglement Analysis</h2>
         </div>
+        <span id="entClassBadge" class="operator-badge neutral">Awaiting analysis</span>
+    </div>
 
+    <div class="ent-analysis-grid">
 
-        <div class="amplitude-list">
-
-            <div>
-                <span>|00&rang;</span>
-                <strong id="amp00">
-                    0.707
-                </strong>
+        <div>
+            <div class="entanglement-meter">
+                <span>Concurrence</span>
+                <strong id="entConcurrence">&mdash;</strong>
             </div>
 
-            <div>
-                <span>|01&rang;</span>
-                <strong>0</strong>
+            <div class="entanglement-bar">
+                <div id="entConcurrenceBar"></div>
             </div>
 
-            <div>
-                <span>|10&rang;</span>
-                <strong>0</strong>
+            <div class="entanglement-result" id="entClassification">
+                Enter a state and run the analysis.
             </div>
 
-            <div>
-                <span>|11&rang;</span>
-                <strong id="amp11">
-                    0.707
-                </strong>
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <section class="panel">
-
-        <div class="panel-title">
-            <div>
-                <span class="panel-number">03</span>
-                <h2>Entanglement Status</h2>
-            </div>
-        </div>
-
-
-        <div class="entanglement-status"
-             id="entanglementStatus">
-
-            <span>?</span>
-
-            <strong>
-                Not measured
-            </strong>
-
-            <p>
-                Create a Bell state to begin.
+            <p class="twoq-hint">
+                Concurrence C = 2|&alpha;&delta; &minus; &beta;&gamma;| measures the
+                entanglement of a pure two-qubit state.
+                C = 0 means the state is separable; C = 1 means it is maximally entangled.
             </p>
-
         </div>
 
-    </section>
+        <div>
+            <div class="twoq-formula ent-ket-box">
+                <span>Normalized |&psi;&rang; =</span>
+                <strong id="entKetDisplay">&mdash;</strong>
+            </div>
 
-</div>
+            <div class="amplitude-list ent-amp-list">
+                <div>
+                    <span>|00&rang;</span>
+                    <strong id="entAmp00">&mdash;</strong>
+                </div>
+                <div>
+                    <span>|01&rang;</span>
+                    <strong id="entAmp01">&mdash;</strong>
+                </div>
+                <div>
+                    <span>|10&rang;</span>
+                    <strong id="entAmp10">&mdash;</strong>
+                </div>
+                <div>
+                    <span>|11&rang;</span>
+                    <strong id="entAmp11">&mdash;</strong>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h3 class="subheading">Measurement Probabilities</h3>
+
+    <div class="twoq-prob-grid">
+        <div class="twoq-prob-card">
+            <div class="twoq-prob-top">
+                <span>|00&rang;</span><strong id="entProb00">&mdash;</strong>
+            </div>
+            <div class="progress"><div class="progress-fill" id="entBar00" style="width:0%"></div></div>
+        </div>
+
+        <div class="twoq-prob-card">
+            <div class="twoq-prob-top">
+                <span>|01&rang;</span><strong id="entProb01">&mdash;</strong>
+            </div>
+            <div class="progress"><div class="progress-fill" id="entBar01" style="width:0%"></div></div>
+        </div>
+
+        <div class="twoq-prob-card">
+            <div class="twoq-prob-top">
+                <span>|10&rang;</span><strong id="entProb10">&mdash;</strong>
+            </div>
+            <div class="progress"><div class="progress-fill" id="entBar10" style="width:0%"></div></div>
+        </div>
+
+        <div class="twoq-prob-card">
+            <div class="twoq-prob-top">
+                <span>|11&rang;</span><strong id="entProb11">&mdash;</strong>
+            </div>
+            <div class="progress"><div class="progress-fill" id="entBar11" style="width:0%"></div></div>
+        </div>
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     SECTION 3: THE FOUR BELL STATES
+========================================== -->
+
+<section class="panel">
+
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">03</span>
+            <h2>The Four Bell States</h2>
+        </div>
+        <span class="panel-subtitle">Reference table</span>
+    </div>
+
+    <p class="ent-bell-intro">
+        The Bell states are the four maximally entangled two-qubit states (C = 1).
+        Together they form an orthonormal basis of the two-qubit state space, so any
+        two-qubit state can be written as a combination of them.
+        Select one to load it into the analyzer above.
+    </p>
+
+    <div class="bell-grid">
+
+        <div class="bell-card">
+            <div class="bell-symbol">&Phi;<sup>+</sup></div>
+            <div class="bell-eq">(|00&rang; + |11&rang;) / &radic;2</div>
+            <p>Even superposition of the two matching basis pairs.</p>
+            <button class="small-btn" onclick="analyzeBellState('phi_plus')">Analyze this state</button>
+        </div>
+
+        <div class="bell-card">
+            <div class="bell-symbol">&Phi;<sup>&minus;</sup></div>
+            <div class="bell-eq">(|00&rang; &minus; |11&rang;) / &radic;2</div>
+            <p>Matching pairs carrying a relative minus sign.</p>
+            <button class="small-btn" onclick="analyzeBellState('phi_minus')">Analyze this state</button>
+        </div>
+
+        <div class="bell-card">
+            <div class="bell-symbol">&Psi;<sup>+</sup></div>
+            <div class="bell-eq">(|01&rang; + |10&rang;) / &radic;2</div>
+            <p>Even superposition of the two opposite pairs.</p>
+            <button class="small-btn" onclick="analyzeBellState('psi_plus')">Analyze this state</button>
+        </div>
+
+        <div class="bell-card">
+            <div class="bell-symbol">&Psi;<sup>&minus;</sup></div>
+            <div class="bell-eq">(|01&rang; &minus; |10&rang;) / &radic;2</div>
+            <p>The singlet state — antisymmetric under qubit exchange.</p>
+            <button class="small-btn" onclick="analyzeBellState('psi_minus')">Analyze this state</button>
+        </div>
+
+    </div>
+
+</section>
 
 {% endblock %}

@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}QKD Lab | Quantum Playground{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <p class="section-label">Lab 08 · Key Distribution</p>
+    <h1>BB84 Quantum Key Distribution</h1>
+    <p>
+        BB84 (Bennett &amp; Brassard, 1984) lets Kumar and Tarun grow a shared secret key
+        from single qubits sent over a quantum channel. Because any measurement disturbs
+        a qubit in an unknown basis, an eavesdropper cannot intercept the channel without
+        injecting errors — and the protocol reveals her presence. Run the simulation,
+        with or without Eve, and watch the physics decide whether the key is safe.
+    </p>
+</div>
+
+
+<!-- =========================================
+     SECTION 1: PROTOCOL SETUP
+========================================== -->
+
+<section class="panel">
+
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">01</span>
+            <h2>Protocol Setup</h2>
+        </div>
+        <span class="panel-subtitle">Kumar &rarr; quantum channel &rarr; Tarun</span>
+    </div>
+
+    <div class="qkd-setup-row">
+
+        <div class="qkd-setup-group">
+            <span class="qkd-setup-label">Qubits</span>
+            <div class="explorer-switch qkd-count-switch">
+                <button class="explorer-tab qkd-count-btn" onclick="setQKDCount(4)">4</button>
+                <button class="explorer-tab qkd-count-btn" onclick="setQKDCount(8)">8</button>
+                <button class="explorer-tab qkd-count-btn active" onclick="setQKDCount(16)">16</button>
+                <button class="explorer-tab qkd-count-btn" onclick="setQKDCount(32)">32</button>
+            </div>
+        </div>
+
+        <div class="qkd-setup-group">
+            <span class="qkd-setup-label">Eve (intercept&ndash;resend)</span>
+            <label class="qkd-switch">
+                <input type="checkbox" id="qkdEveToggle" onchange="toggleQkdEve()">
+                <span class="qkd-slider"></span>
+                <span class="qkd-switch-text" id="qkdEveLabel">Eve OFF</span>
+            </label>
+        </div>
+
+        <div class="qkd-setup-group qkd-actions">
+            <button class="primary-btn" id="qkdRunBtn" onclick="runQKDSimulation()">&#9654; Run Simulation</button>
+            <button class="secondary-btn" id="qkdStepBtn" onclick="stepQKD()">Step-by-Step</button>
+            <button class="secondary-btn" onclick="resetQKD()">&#8635; Reset</button>
+        </div>
+
+    </div>
+
+    <div class="qkd-stages" id="qkdStages">
+        <div class="qkd-stage" data-stage="prepare">
+            <div class="qkd-stage-head"><span>01</span>Prepare</div>
+            <p>Kumar picks a random bit and a random basis (Z or X), then prepares the qubit: |0&rang;, |1&rang;, or |+&rang;/|&minus;&rang; via H.</p>
+        </div>
+        <div class="qkd-stage" data-stage="transmit">
+            <div class="qkd-stage-head"><span>02</span>Transmit</div>
+            <p>The qubit crosses the quantum channel. If Eve is on, she intercepts it, measures in a guessed basis, and resends the result.</p>
+        </div>
+        <div class="qkd-stage" data-stage="measure">
+            <div class="qkd-stage-head"><span>03</span>Measure</div>
+            <p>Tarun guesses a basis of his own. For an X-basis measurement he applies H first, then reads the qubit.</p>
+        </div>
+        <div class="qkd-stage" data-stage="sift">
+            <div class="qkd-stage-head"><span>04</span>Sift</div>
+            <p>Kumar and Tarun publicly compare bases — never the bits — and discard every qubit where the bases disagree.</p>
+        </div>
+        <div class="qkd-stage" data-stage="verify">
+            <div class="qkd-stage-head"><span>05</span>Verify</div>
+            <p>A sample of sifted bits is revealed to estimate the error rate: &asymp;0% means a clean channel, &asymp;25% means Eve was listening.</p>
+        </div>
+        <div class="qkd-stage" data-stage="key">
+            <div class="qkd-stage-head"><span>06</span>Key</div>
+            <p>Within tolerance, the unrevealed sifted bits become the shared secret key. Otherwise the key is rejected.</p>
+        </div>
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     SECTION 2: QUANTUM CHANNEL
+========================================== -->
+
+<section class="panel">
+
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">02</span>
+            <h2>Quantum Channel</h2>
+        </div>
+        <span class="panel-subtitle" id="qkdChannelStatus">No transmission yet</span>
+    </div>
+
+    <div class="qkd-channel" id="qkdChannel">
+        <div class="qkd-station">
+            <div class="qkd-station-name">Kumar</div>
+            <div class="qkd-station-role">sender</div>
+        </div>
+
+        <div class="qkd-station qkd-station-eve off" id="qkdEveStation">
+            <div class="qkd-station-name">Eve</div>
+            <div class="qkd-station-role" id="qkdEveStationRole">offline</div>
+        </div>
+
+        <div class="qkd-station">
+            <div class="qkd-station-name">Tarun</div>
+            <div class="qkd-station-role">receiver</div>
+        </div>
+
+        <div class="qkd-track"></div>
+        <div class="qkd-photon" id="qkdPhoton" style="left: 6%;">
+            <span id="qkdPhotonKet">|0&rang;</span>
+        </div>
+    </div>
+
+    <div class="qkd-inspector-grid">
+
+        <div class="qkd-card">
+            <div class="qkd-card-head">
+                <span class="qkd-card-title">Kumar prepares</span>
+                <span class="qkd-card-tag" id="qkdAliceBasis">&mdash;</span>
+            </div>
+            <div class="qkd-card-rows">
+                <div><span>Random bit</span><strong id="qkdAliceBit">&mdash;</strong></div>
+                <div><span>Basis</span><strong id="qkdAliceBasisName">&mdash;</strong></div>
+                <div><span>Gates</span><strong id="qkdAliceGates">&mdash;</strong></div>
+                <div><span>Qubit sent</span><strong id="qkdAliceKet">&mdash;</strong></div>
+            </div>
+        </div>
+
+        <div class="qkd-card qkd-card-eve off" id="qkdEveCard">
+            <div class="qkd-card-head">
+                <span class="qkd-card-title">Eve intercepts</span>
+                <span class="qkd-card-tag" id="qkdEveBasis">&mdash;</span>
+            </div>
+            <div class="qkd-card-rows">
+                <div><span>Guess basis</span><strong id="qkdEveBasisName">&mdash;</strong></div>
+                <div><span>Her result</span><strong id="qkdEveResult">&mdash;</strong></div>
+                <div><span>Gates</span><strong id="qkdEveGates">&mdash;</strong></div>
+                <div><span>Qubit resent</span><strong id="qkdEveKet">&mdash;</strong></div>
+            </div>
+        </div>
+
+        <div class="qkd-card">
+            <div class="qkd-card-head">
+                <span class="qkd-card-title">Tarun measures</span>
+                <span class="qkd-card-tag" id="qkdBobBasis">&mdash;</span>
+            </div>
+            <div class="qkd-card-rows">
+                <div><span>Guess basis</span><strong id="qkdBobBasisName">&mdash;</strong></div>
+                <div><span>Gates</span><strong id="qkdBobGates">&mdash;</strong></div>
+                <div><span>Arriving qubit</span><strong id="qkdBobKet">&mdash;</strong></div>
+                <div><span>Measured bit</span><strong id="qkdBobResult">&mdash;</strong></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="qkd-wire-row">
+        <span class="qubit-label">q&#8320;</span>
+        <div class="qkd-wire-gates" id="qkdCircuitWire">
+            <span class="empty-circuit">Step or run the simulation to inspect each qubit.</span>
+        </div>
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     SECTION 3: TRANSMISSION LOG
+========================================== -->
+
+<section class="panel">
+
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">03</span>
+            <h2>Transmission Log</h2>
+        </div>
+        <span id="qkdLogCount" class="operator-badge neutral">0 qubits</span>
+    </div>
+
+    <div class="history-table-container">
+        <table class="history-table qkd-log-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Bit (K)</th>
+                    <th>Basis (K)</th>
+                    <th>Gates (K)</th>
+                    <th>Eve basis</th>
+                    <th>Eve bit</th>
+                    <th>Basis (T)</th>
+                    <th>Gates (T)</th>
+                    <th>Bit (T)</th>
+                    <th>Sift</th>
+                </tr>
+            </thead>
+            <tbody id="qkdLogBody">
+                <tr>
+                    <td colspan="10" class="table-empty">No qubits transmitted yet.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     SECTION 4: SIFT & VERIFY
+========================================== -->
+
+<section class="panel">
+
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">04</span>
+            <h2>Sifted Key &amp; Verification</h2>
+        </div>
+        <span class="panel-subtitle">Mismatched bases are discarded publicly</span>
+    </div>
+
+    <div class="qkd-compare-block">
+        <div class="qkd-compare-head">
+            <span class="qkd-setup-label">Public comparison — bases only</span>
+            <span class="qkd-compare-note">the bits themselves are never shared</span>
+        </div>
+        <div class="qkd-compare-grid" id="qkdCompareGrid">
+            <span class="qkd-compare-empty">The basis comparison will appear here after transmission.</span>
+        </div>
+
+        <div class="qkd-mechanism">
+            <div class="qkd-mechanism-title">
+                <span>&#9432;</span>
+                Why only bases are compared — the mechanism
+            </div>
+            <div class="qkd-mechanism-points">
+                <p>
+                    <strong>1.</strong>
+                    The key bits travel as qubits, not as messages. Once Tarun measures,
+                    the carrier is consumed — nothing is left on the channel to steal.
+                </p>
+                <p>
+                    <strong>2.</strong>
+                    Kumar and Tarun then talk over an ordinary public channel, but say only
+                    the basis used at each position (&ldquo;Z&rdquo;, &ldquo;X&rdquo;) — never the outcome bit.
+                </p>
+                <p>
+                    <strong>3.</strong>
+                    A basis name alone is useless to Eve: knowing a qubit was measured in Z
+                    doesn't reveal whether the result was 0 or 1. The shared key forms
+                    silently at both ends.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="qkd-sift-summary" id="qkdSiftSummary">
+        Run the simulation to compare bases and build the sifted key.
+    </div>
+
+    <div class="qkd-key-block">
+        <div class="qkd-key-row">
+            <span class="qkd-key-label">Kumar's sifted key</span>
+            <div class="qkd-key-bits" id="qkdAliceKey"><span class="qkd-key-empty">&mdash;</span></div>
+        </div>
+        <div class="qkd-key-row">
+            <span class="qkd-key-label">Tarun's sifted key</span>
+            <div class="qkd-key-bits" id="qkdBobKey"><span class="qkd-key-empty">&mdash;</span></div>
+        </div>
+        <div class="qkd-key-legend">
+            <span><i class="qkd-chip-demo sample"></i> publicly revealed sample</span>
+            <span><i class="qkd-chip-demo error"></i> mismatch</span>
+        </div>
+    </div>
+
+    <div class="qkd-verify-grid">
+
+        <div class="metric-card">
+            <span class="metric-label">Sample revealed</span>
+            <strong class="metric-value" id="qkdSampleSize">&mdash;</strong>
+            <small class="metric-sub" id="qkdSampleInfo">Half of the sifted key</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Sample errors</span>
+            <strong class="metric-value" id="qkdSampleErrors">&mdash;</strong>
+            <small class="metric-sub">Bits where Kumar &ne; Tarun</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Error rate (QBER)</span>
+            <strong class="metric-value" id="qkdErrorRate">&mdash;</strong>
+            <small class="metric-sub" id="qkdThresholdInfo">Tolerance &le; 15%</small>
+        </div>
+
+        <div class="metric-card">
+            <span class="metric-label">Key length</span>
+            <strong class="metric-value" id="qkdKeyLength">&mdash;</strong>
+            <small class="metric-sub">Sifted bits kept</small>
+        </div>
+
+    </div>
+
+    <div class="qkd-verdict" id="qkdVerdict">
+        <strong id="qkdVerdictTitle">Awaiting verification</strong>
+        <p id="qkdVerdictText">
+            After sifting, Kumar and Tarun publicly reveal a sample of their key bits.
+            A low error rate means the channel was clean; roughly 25% errors is the
+            signature of Eve measuring every qubit in a random basis.
+        </p>
+    </div>
+
+</section>
+
+
+<!-- =========================================
+     SECTION 5: INFERENCES & CONCLUSIONS
+========================================== -->
+
+<section class="panel">
+
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">05</span>
+            <h2>Inferences &amp; Conclusions</h2>
+        </div>
+        <span class="panel-subtitle">What the simulation teaches</span>
+    </div>
+
+    <h3 class="subheading">Inferences</h3>
+
+    <div class="qkd-notes">
+
+        <div class="qkd-note">
+            <span>01</span>
+            <p id="qkdNote1">
+                With Eve off, Kumar&rsquo;s and Tarun&rsquo;s sifted keys always agree &mdash;
+                an ideal quantum channel gives a 0% error rate.
+            </p>
+        </div>
+
+        <div class="qkd-note">
+            <span>02</span>
+            <p id="qkdNote2">
+                With Eve intercepting every qubit, the error rate clusters around 25%:
+                she guesses the wrong basis half the time, and each wrong guess
+                randomizes that qubit for Tarun half of the time (0.5 &times; 0.5 = 0.25).
+            </p>
+        </div>
+
+        <div class="qkd-note">
+            <span>03</span>
+            <p id="qkdNote3">
+                Sifting discards about half of the transmitted qubits whether or not
+                Eve is present &mdash; Kumar and Tarun choose bases independently, so
+                only ~50% of positions ever match.
+            </p>
+        </div>
+
+        <div class="qkd-note">
+            <span>04</span>
+            <p id="qkdNote4">
+                Longer transmissions make the signature clearer: at 32 qubits the
+                ~25% eavesdropping rate is unmistakable, while a 4-qubit run can
+                still be fooled by luck.
+            </p>
+        </div>
+
+        <div class="qkd-note">
+            <span>05</span>
+            <p id="qkdNote5">
+                Security comes from measurement disturbance, not from hiding the
+                channel &mdash; Eve is free to listen, but she cannot measure a qubit
+                without leaving fingerprints in the error rate.
+            </p>
+        </div>
+
+    </div>
+
+    <h3 class="subheading">Conclusions</h3>
+
+    <div class="qkd-conclusion">
+        <p>
+            BB84 works because quantum measurement is never passive: observing a qubit
+            in the wrong basis physically alters it. Kumar and Tarun deliberately sacrifice
+            half of their qubits to sifting, and a sample of their key to verification &mdash;
+            and in return they gain something no classical protocol can offer: proof,
+            rooted in physics rather than computation, that no one listened in.
+        </p>
+        <p>
+            Nothing in this lab is scripted &mdash; every bit, basis and outcome is sampled
+            live, so two runs with identical settings never match in detail, yet their
+            statistics always converge: &asymp;0% errors on a clean channel, &asymp;25% with Eve.
+            That statistical signature is exactly what real QKD systems look for, and it is
+            why BB84 remains the foundation of quantum key distribution forty years on.
+        </p>
+    </div>
+
+</section>
+
+{% endblock %}
