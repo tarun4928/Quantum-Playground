@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% block title %}Quantum Magnetometer | Quantum Playground{% endblock %}
+{% block main_class %} sensing-page{% endblock %}
+{% block head %}
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+{% endblock %}
+{% block content %}
+
+<section class="page-heading">
+    <p class="section-label">QUANTUM SENSING</p>
+    <h1>Quantum Magnetometer</h1>
+    <p>Set an unknown magnetic field, observe Larmor precession, and estimate the field from quantum measurement statistics.</p>
+</section>
+
+<section class="panel sensing-panel">
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">01</span>
+            <h2>Experiment Controls</h2>
+        </div>
+        <span class="live-badge">SENSING</span>
+    </div>
+
+    <div class="field-control">
+        <div class="field-control-heading">
+            <label for="fieldStrength">Magnetic Field Strength</label>
+        </div>
+        <input id="fieldStrength" class="field-slider" type="range" min="0" max="100" value="50" step="1" aria-label="Magnetic Field Strength">
+        <div class="slider-labels">
+            <span>Weak</span>
+            <span>Strong</span>
+        </div>
+        <p class="control-note">Choose the experimental field strength. The exact field value remains hidden until the experiment is complete.</p>
+    </div>
+
+    <button id="startSensing" class="primary-btn sensing-start">Start Sensing →</button>
+</section>
+
+<section class="panel sensing-bloch-panel">
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">02</span>
+            <h2>Quantum State — Larmor Precession</h2>
+        </div>
+        <span id="sensingStatus" class="live-badge">READY</span>
+    </div>
+
+    <div id="sensingBlochSphere" class="sensing-bloch-sphere" aria-label="Interactive Bloch sphere showing magnetic-field direction and Larmor precession"></div>
+
+    <div class="sensing-legend">
+        <div><span class="legend-dot state"></span><span>State vector</span></div>
+        <div><span class="legend-dot field"></span><span>Magnetic-field direction</span></div>
+        <div><span class="legend-dot path"></span><span>Precession path</span></div>
+    </div>
+
+    <p class="stage-caption">Drag the Bloch sphere to rotate it freely. The state vector precesses around the applied field direction in a cone; stronger fields produce faster precession.</p>
+</section>
+
+<section class="panel">
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">03</span>
+            <h2>Measurement Statistics</h2>
+        </div>
+        <span class="live-badge">QUANTUM SHOTS</span>
+    </div>
+    <div class="stat-placeholder" id="measurementStats">
+        <div class="empty-steps">Start the sensing experiment to generate measurement statistics.</div>
+    </div>
+</section>
+
+<section id="sensingResult" class="panel sensing-result hidden">
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">04</span>
+            <h2>Final Result</h2>
+        </div>
+        <span class="live-badge">REVEALED</span>
+    </div>
+
+    <div class="result-grid">
+        <div class="result-card">
+            <span>Actual magnetic field</span>
+            <strong id="actualField">—</strong>
+        </div>
+        <div class="result-card">
+            <span>Estimated magnetic field</span>
+            <strong id="estimatedField">—</strong>
+        </div>
+        <div class="result-card">
+            <span>Error</span>
+            <strong id="fieldError">—</strong>
+        </div>
+    </div>
+
+    <div class="result-actions">
+        <p>The exact field was hidden during sensing and is revealed only after the estimate is complete.</p>
+        <button id="runAgain" class="secondary-btn">Run Experiment Again</button>
+    </div>
+</section>
+
+<script>
+(() => {
+    const slider = document.getElementById("fieldStrength");
+    const start = document.getElementById("startSensing");
+    const again = document.getElementById("runAgain");
+    const result = document.getElementById("sensingResult");
+    const status = document.getElementById("sensingStatus");
+    const stats = document.getElementById("measurementStats");
+    const sphereEl = document.getElementById("sensingBlochSphere");
+
+    let animationFrame = null;
+    let running = false;
+    let phase = 0;
+    let plotReady = false;
+
+    const theta0 = Math.PI * 0.36;
+    const coneRadius = Math.sin(theta0);
+    const coneZ = Math.cos(theta0);
+
+    function sphereSurface() {
+        const theta = Array.from({ length: 42 }, (_, i) => Math.PI * i / 41);
+        const phi = Array.from({ length: 50 }, (_, i) => 2 * Math.PI * i / 49);
+        const x = [], y = [], z = [];
+        theta.forEach(t => {
+            const rx = [], ry = [], rz = [];
+            phi.forEach(p => {
+                rx.push(Math.sin(t) * Math.cos(p));
+                ry.push(Math.sin(t) * Math.sin(p));
+                rz.push(Math.cos(t));
+            });
+            x.push(rx); y.push(ry); z.push(rz);
+        });
+        return { x, y, z };
+    }
+
+    function makePrecessionCircle() {
+        const x = [], y = [], z = [];
+        for (let i = 0; i <= 180; i++) {
+            const p = 2 * Math.PI * i / 180;
+            x.push(coneRadius * Math.cos(p));
+            y.push(coneRadius * Math.sin(p));
+            z.push(coneZ);
+        }
+        return { x, y, z };
+    }
+
+    function makePrecessionCone() {
+        const x = [], y = [], z = [];
+        const radial = Array.from({ length: 18 }, (_, i) => i / 17);
+        const phi = Array.from({ length: 50 }, (_, i) => 2 * Math.PI * i / 49);
+        radial.forEach(r => {
+            const rx = [], ry = [], rz = [];
+            phi.forEach(p => {
+                rx.push(r * coneRadius * Math.cos(p));
+                ry.push(r * coneRadius * Math.sin(p));
+                rz.push(1 - r * (1 - coneZ));
+            });
+            x.push(rx); y.push(ry); z.push(rz);
+        });
+        return { x, y, z };
+    }
+
+    function vectorAt(p) {
+        return {
+            x: coneRadius * Math.cos(p),
+            y: coneRadius * Math.sin(p),
+            z: coneZ
+        };
+    }
+
+    function buildTraces(p) {
+        const s = sphereSurface();
+        const c = makePrecessionCircle();
+        const cc = makePrecessionCone();
+        const v = vectorAt(p);
+
+        return [
+            {
+                x: s.x, y: s.y, z: s.z,
+                type: "surface",
+                opacity: 0.32,
+                showscale: false,
+                hoverinfo: "skip",
+                colorscale: [[0, "rgb(244, 237, 223)"], [1, "rgb(206, 188, 156)"]],
+                name: "Bloch Sphere"
+            },
+            {
+                x: cc.x, y: cc.y, z: cc.z,
+                type: "surface",
+                opacity: 0.10,
+                showscale: false,
+                hoverinfo: "skip",
+                colorscale: [[0, "#9b8a72"], [1, "#9b8a72"]],
+                name: "Precession Cone"
+            },
+            {
+                x: c.x, y: c.y, z: c.z,
+                type: "scatter3d",
+                mode: "lines",
+                line: { width: 5, color: "#9b8a72", dash: "dash" },
+                hoverinfo: "skip",
+                name: "Precession Path"
+            },
+            {
+                x: [0, 0], y: [0, 0], z: [0, 1.0],
+                type: "scatter3d",
+                mode: "lines",
+                line: { width: 7, color: "#b08a45" },
+                hoverinfo: "skip",
+                name: "Magnetic Field"
+            },
+            {
+                type: "cone",
+                x: [0], y: [0], z: [1.0],
+                u: [0], v: [0], w: [0.18],
+                anchor: "tail",
+                sizemode: "absolute",
+                sizeref: 0.18,
+                showscale: false,
+                colorscale: [[0, "#b08a45"], [1, "#b08a45"]],
+                hoverinfo: "skip",
+                name: "B direction"
+            },
+            {
+                x: [0, v.x], y: [0, v.y], z: [0, v.z],
+                type: "scatter3d",
+                mode: "lines",
+                line: { width: 8, color: "#765438" },
+                hoverinfo: "skip",
+                name: "State Vector"
+            },
+            {
+                type: "cone",
+                x: [v.x], y: [v.y], z: [v.z],
+                u: [v.x], v: [v.y], w: [v.z],
+                anchor: "tip",
+                sizemode: "absolute",
+                sizeref: 0.18,
+                showscale: false,
+                colorscale: [[0, "#765438"], [1, "#765438"]],
+                hoverinfo: "skip",
+                name: "State Direction"
+            },
+            {
+                x: [v.x], y: [v.y], z: [v.z],
+                type: "scatter3d",
+                mode: "markers",
+                marker: { size: 7, color: "#765438" },
+                hovertemplate: "State vector<extra></extra>",
+                name: "Quantum State"
+            },
+            {
+                x: [0], y: [0], z: [1.16],
+                type: "scatter3d",
+                mode: "text",
+                text: ["B"],
+                textposition: "top center",
+                textfont: { size: 16, color: "#b08a45", family: "IBM Plex Mono, monospace" },
+                hoverinfo: "skip",
+                name: "Field Label"
+            }
+        ];
+    }
+
+    const layout = {
+        margin: { l: 0, r: 0, t: 0, b: 0 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        uirevision: "quantum-magnetometer-bloch",
+        showlegend: false,
+        scene: {
+            xaxis: { title: "X", range: [-1.18, 1.18], color: "#8A7A66", gridcolor: "rgba(118,84,56,0.14)", zerolinecolor: "rgba(118,84,56,0.3)", showbackground: false },
+            yaxis: { title: "Y", range: [-1.18, 1.18], color: "#8A7A66", gridcolor: "rgba(118,84,56,0.14)", zerolinecolor: "rgba(118,84,56,0.3)", showbackground: false },
+            zaxis: { title: "Z", range: [-1.18, 1.18], color: "#8A7A66", gridcolor: "rgba(118,84,56,0.14)", zerolinecolor: "rgba(118,84,56,0.3)", showbackground: false },
+            aspectmode: "cube",
+            camera: { eye: { x: 1.45, y: 1.45, z: 1.25 } }
+        }
+    };
+
+    function renderSphere(p = phase) {
+        if (!window.Plotly || !sphereEl) return;
+        const traces = buildTraces(p);
+        if (!plotReady) {
+            Plotly.newPlot(sphereEl, traces, layout, { responsive: true, displaylogo: false, scrollZoom: true });
+            plotReady = true;
+        } else {
+            Plotly.react(sphereEl, traces, layout, { responsive: true, displaylogo: false, scrollZoom: true });
+        }
+    }
+
+    function updateVectorOnly(p) {
+        if (!plotReady || !window.Plotly) return;
+        const v = vectorAt(p);
+
+        // Update all moving traces in one Plotly call. This keeps the
+        // precession smooth and avoids repeatedly rebuilding the 3D scene.
+        Plotly.restyle(sphereEl, {
+            x: [[0, v.x], [v.x], [v.x]],
+            y: [[0, v.y], [v.y], [v.y]],
+            z: [[0, v.z], [v.z], [v.z]],
+            u: [undefined, [v.x]],
+            v: [undefined, [v.y]],
+            w: [undefined, [v.z]]
+        }, [5, 6, 7]);
+    }
+
+    function startPrecession() {
+        const normalizedStrength = Number(slider.value) / 100;
+        // Deliberately smooth enough to watch the full circular motion.
+        const angularSpeed = 0.35 + normalizedStrength * 1.65;
+        const started = performance.now();
+        phase = 0;
+
+        function frame(now) {
+            if (!running) return;
+            phase = ((now - started) / 1000) * angularSpeed;
+            updateVectorOnly(phase);
+            animationFrame = requestAnimationFrame(frame);
+        }
+        animationFrame = requestAnimationFrame(frame);
+    }
+
+    function stopPrecession() {
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+    }
+
+    function resetVisuals() {
+        running = false;
+        stopPrecession();
+        slider.disabled = false;
+        start.disabled = false;
+        start.textContent = "Start Sensing →";
+        status.textContent = "READY";
+        stats.innerHTML = '<div class="empty-steps">Start the sensing experiment to generate measurement statistics.</div>';
+        result.classList.add("hidden");
+        phase = 0;
+        renderSphere(phase);
+    }
+
+    slider.addEventListener("input", () => {
+        if (!running) renderSphere(phase);
+    });
+
+    renderSphere(0);
+
+    start.addEventListener("click", async () => {
+        if (running) return;
+        running = true;
+        slider.disabled = true;
+        start.disabled = true;
+        start.textContent = "Sensing…";
+        status.textContent = "RUNNING";
+        result.classList.add("hidden");
+        startPrecession();
+
+        try {
+            const response = await fetch("/api/sensing/start", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ position: Number(slider.value) })
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error || "Sensing failed.");
+
+            stats.innerHTML = `
+                <div class="measurement-summary">
+                    <div><span>|+x⟩ outcomes</span><strong>${data.plus_count}</strong></div>
+                    <div><span>|−x⟩ outcomes</span><strong>${data.minus_count}</strong></div>
+                    <div><span>Total shots</span><strong>${data.shots}</strong></div>
+                </div>
+                <p class="control-note">The field estimate is reconstructed from these simulated quantum measurement statistics.</p>
+            `;
+
+            document.getElementById("actualField").textContent = `${data.actual_field.toFixed(3)} μT`;
+            document.getElementById("estimatedField").textContent = `${data.estimated_field.toFixed(3)} μT`;
+            document.getElementById("fieldError").textContent = `${data.error_percent.toFixed(2)}%`;
+            result.classList.remove("hidden");
+
+            // The measurement is complete, but the visual precession must
+            // continue so the audience can clearly see the qubit rotating
+            // around the applied magnetic-field direction.
+            status.textContent = "COMPLETE • PRECESSING";
+            start.textContent = "Sensing Complete • Precessing";
+            // Keep `running` true so requestAnimationFrame continues.
+            // The separate "Run Experiment Again" button stops and resets it.
+        } catch (error) {
+            running = false;
+            stopPrecession();
+            slider.disabled = false;
+            start.disabled = false;
+            start.textContent = "Start Sensing →";
+            status.textContent = "ERROR";
+            stats.innerHTML = `<div class="empty-steps">${error.message}</div>`;
+        }
+    });
+
+    again.addEventListener("click", resetVisuals);
+})();
+</script>
+{% endblock %}

@@ -4535,3 +4535,284 @@ button:disabled,
         gap: 16px;
     }
 }
+
+/* =====================================================
+   MAGNETIC FIELD SENSING
+   Uses the existing Quantum Playground design system.
+   ===================================================== */
+.sensing-page .page-heading { max-width: 900px; }
+
+.field-control {
+    padding: 6px 0 4px;
+}
+
+.field-control-heading label {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+}
+
+.field-slider {
+    width: 100%;
+    height: 6px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: linear-gradient(90deg, var(--border-strong), var(--accent));
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.field-slider::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    box-shadow: var(--shadow-sm);
+}
+
+.field-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+}
+
+.field-slider:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.control-note,
+.stage-caption {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 14px;
+}
+
+.sensing-start {
+    margin-top: 22px;
+    border: 0;
+}
+
+.sensing-grid {
+    margin-top: 18px;
+    align-items: stretch;
+}
+
+.precession-stage {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 22px;
+}
+
+.spin-circle {
+    width: 210px;
+    height: 210px;
+    border: 1px solid var(--border-strong);
+    border-radius: 50%;
+    position: relative;
+    background: radial-gradient(circle at center, var(--surface-2), var(--surface));
+}
+
+.spin-axis {
+    position: absolute;
+    left: 50%;
+    top: 15px;
+    bottom: 15px;
+    width: 1px;
+    background: var(--brass);
+    opacity: 0.7;
+}
+
+.spin-vector {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 82px;
+    height: 2px;
+    background: var(--accent);
+    transform-origin: 0 50%;
+    transition: transform 120ms linear;
+}
+
+.spin-tip {
+    position: absolute;
+    left: calc(50% + 77px);
+    top: calc(50% - 5px);
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 9px solid var(--accent);
+    transform-origin: -77px 5px;
+}
+
+.spin-center {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    left: calc(50% - 5px);
+    top: calc(50% - 5px);
+}
+
+.axis-label {
+    position: absolute;
+    right: calc(50% - 128px);
+    top: calc(50% - 112px);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+
+.stat-placeholder {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+}
+
+.measurement-summary {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.measurement-summary > div,
+.result-card {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--r-md);
+    padding: 18px;
+}
+
+.measurement-summary span,
+.result-card span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.measurement-summary strong {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--accent-strong);
+}
+
+.sensing-result {
+    margin-top: 18px;
+}
+
+.hidden { display: none !important; }
+
+.result-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.result-card strong {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 22px;
+    color: var(--accent-strong);
+}
+
+.result-actions {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.result-actions p {
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 650px;
+}
+
+@media (max-width: 850px) {
+    .measurement-summary,
+    .result-grid { grid-template-columns: 1fr; }
+    .result-actions { flex-direction: column; align-items: flex-start; }
+}
+
+/* =====================================================
+   QUANTUM MAGNETOMETER BLOCH SPHERE
+   ===================================================== */
+.sensing-bloch-panel {
+    margin-top: 18px;
+}
+
+.sensing-bloch-sphere {
+    width: 100%;
+    height: 620px;
+    min-height: 520px;
+    position: relative;
+}
+
+.sensing-bloch-sphere .plotly {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.sensing-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding: 4px 4px 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.045em;
+}
+
+.sensing-legend > div {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-dot.state { background: #765438; }
+.legend-dot.field { background: #b08a45; }
+.legend-dot.path { background: #9b8a72; }
+
+@media (max-width: 850px) {
+    .sensing-bloch-sphere {
+        height: 480px;
+        min-height: 420px;
+    }
+}

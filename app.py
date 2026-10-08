@@ -88,6 +88,61 @@ def qkd_page():
     return render_template("qkd.html")
 
 
+@app.route("/sensing")
+def sensing_page():
+    return render_template("sensing.html")
+
+
+# =========================================================
+# QUANTUM MAGNETIC FIELD SENSING
+# =========================================================
+
+@app.route("/api/sensing/start", methods=["POST"])
+def sensing_start_api():
+    try:
+        data = request.get_json(silent=True) or {}
+        position = float(data.get("position", 50))
+        position = max(0.0, min(100.0, position))
+
+        # The exact mapping is deliberately kept on the server.
+        # The client receives it only in the final result.
+        actual_field = 0.10 + 0.90 * (position / 100.0)  # microtesla
+
+        # Effective evolution factor for the educational simulation.
+        # This keeps the phase in a useful range for all slider positions.
+        gamma_time = 1.00  # radians per microtesla
+        phase = gamma_time * actual_field
+
+        shots = 400
+        p_plus = (1.0 + np.cos(phase)) / 2.0
+        plus_count = int(np.random.binomial(shots, p_plus))
+        minus_count = shots - plus_count
+        measured_p_plus = plus_count / shots
+
+        # Estimate phase and therefore field from the simulated statistics.
+        measured_p_plus = min(1.0, max(0.0, measured_p_plus))
+        estimated_phase = float(np.arccos(2.0 * measured_p_plus - 1.0))
+        estimated_field = estimated_phase / gamma_time
+        error = abs(estimated_field - actual_field) / actual_field * 100.0
+
+        return jsonify({
+            "success": True,
+            "shots": shots,
+            "plus_count": plus_count,
+            "minus_count": minus_count,
+            "probability_plus": measured_p_plus,
+            "precession_phase": phase,
+            "estimated_field": estimated_field,
+            "actual_field": actual_field,
+            "error_percent": error,
+        })
+    except Exception as error:
+        return jsonify({
+            "success": False,
+            "error": str(error),
+        }), 400
+
+
 # =========================================================
 # QUANTUM KEY DISTRIBUTION (BB84)
 # =========================================================
