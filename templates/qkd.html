@@ -10,8 +10,8 @@
     <p>
         BB84 (Bennett &amp; Brassard, 1984) lets Kumar and Tarun grow a shared secret key
         from single qubits sent over a quantum channel. Qubits are encoded using two conjugate
-        measurement bases: the <strong>rectilinear basis</strong> (denoted <strong>+</strong> or <strong>Z</strong>, with eigenstates |0&rang; and |1&rang;)
-        and the <strong>diagonal basis</strong> (denoted <strong>&times;</strong> or <strong>X</strong>, with eigenstates |+&rang; and |&minus;&rang;).
+        measurement bases: the <strong>rectilinear basis</strong> (denoted <strong>+</strong> or <strong>Z</strong>, with eigenstates |0⟩ and |1⟩)
+        and the <strong>diagonal basis</strong> (denoted <strong>&times;</strong> or <strong>X</strong>, with eigenstates |+⟩ and |&minus;⟩).
         Because any measurement disturbs a qubit in an unknown basis, an eavesdropper cannot intercept
         the channel without injecting errors. Run the simulation, with or without Eve, and watch the
         basis geometry and physics decide whether the key is safe.
@@ -66,7 +66,7 @@
     <div class="qkd-stages" id="qkdStages">
         <div class="qkd-stage" data-stage="prepare">
             <div class="qkd-stage-head"><span>01</span>Prepare</div>
-            <p>Kumar picks a random bit (0 or 1) and encodes it in either the <strong>Rectilinear basis (+ / Z)</strong> (|0&rang; or |1&rang;) or the <strong>Diagonal basis (&times; / X)</strong> (|+&rang; or |&minus;&rang; via H).</p>
+            <p>Kumar picks a random bit (0 or 1) and encodes it in either the <strong>Rectilinear basis (+ / Z)</strong> (|0⟩ or |1⟩) or the <strong>Diagonal basis (&times; / X)</strong> (|+⟩ or |&minus;⟩ via H).</p>
         </div>
         <div class="qkd-stage" data-stage="transmit">
             <div class="qkd-stage-head"><span>02</span>Transmit</div>
@@ -125,7 +125,7 @@
 
         <div class="qkd-track"></div>
         <div class="qkd-photon" id="qkdPhoton" style="left: 6%;">
-            <span id="qkdPhotonKet">|0&rang;</span>
+            <span id="qkdPhotonKet">|0⟩</span>
         </div>
     </div>
 
@@ -154,7 +154,7 @@
                         <line x1="0" y1="0" x2="0" y2="-40" class="qkd-pol-vec" id="qkdAlicePolVec"></line>
                         <circle cx="0" cy="-40" r="4" class="qkd-pol-dot" id="qkdAlicePolDot"></circle>
                     </svg>
-                    <div class="qkd-pol-badge" id="qkdAlicePolBadge">Rectilinear (+) |0&rang;</div>
+                    <div class="qkd-pol-badge" id="qkdAlicePolBadge">Rectilinear (+) |0⟩</div>
                 </div>
             </div>
             <div class="qkd-card-rows">
@@ -241,7 +241,7 @@
             </div>
             <div class="qkd-basis-ref-body">
                 <strong>Rectilinear Basis ( + / Z )</strong>
-                <p>Eigenstates: <code>|0&rang;</code> (bit 0, vertical &uarr;) and <code>|1&rang;</code> (bit 1, horizontal &rarr;). Computational basis without Hadamard rotation.</p>
+                <p>Eigenstates: <code>|0⟩</code> (bit 0, vertical &uarr;) and <code>|1⟩</code> (bit 1, horizontal &rarr;). Computational basis without Hadamard rotation.</p>
             </div>
         </div>
         <div class="qkd-basis-ref-card diag">
@@ -254,7 +254,7 @@
             </div>
             <div class="qkd-basis-ref-body">
                 <strong>Diagonal Basis ( &times; / X )</strong>
-                <p>Eigenstates: <code>|+&rang;</code> (bit 0, diagonal &#8599;) and <code>|&minus;&rang;</code> (bit 1, antidiagonal &#8598;). Rotated by 45&deg; via the Hadamard gate (H).</p>
+                <p>Eigenstates: <code>|+⟩</code> (bit 0, diagonal &#8599;) and <code>|&minus;⟩</code> (bit 1, antidiagonal &#8598;). Rotated by 45&deg; via the Hadamard gate (H).</p>
             </div>
         </div>
     </div>

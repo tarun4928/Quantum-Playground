@@ -31,13 +31,13 @@
     </div>
 
     <div class="ent-equation-row">
-        |&psi;&rang; = &alpha;|00&rang; + &beta;|01&rang; + &gamma;|10&rang; + &delta;|11&rang;
+        |&psi;⟩ = &alpha;|00⟩ + &beta;|01⟩ + &gamma;|10⟩ + &delta;|11⟩
     </div>
 
     <div class="ent-state-grid">
 
         <div class="ent-amp-group">
-            <span class="ent-amp-label">&alpha; &nbsp;|00&rang;</span>
+            <span class="ent-amp-label">&alpha; &nbsp;|00⟩</span>
             <div class="ent-amp-inputs">
                 <div>
                     <label class="operator-input-label" for="entRe00">Re(&alpha;)</label>
@@ -51,7 +51,7 @@
         </div>
 
         <div class="ent-amp-group">
-            <span class="ent-amp-label">&beta; &nbsp;|01&rang;</span>
+            <span class="ent-amp-label">&beta; &nbsp;|01⟩</span>
             <div class="ent-amp-inputs">
                 <div>
                     <label class="operator-input-label" for="entRe01">Re(&beta;)</label>
@@ -65,7 +65,7 @@
         </div>
 
         <div class="ent-amp-group">
-            <span class="ent-amp-label">&gamma; &nbsp;|10&rang;</span>
+            <span class="ent-amp-label">&gamma; &nbsp;|10⟩</span>
             <div class="ent-amp-inputs">
                 <div>
                     <label class="operator-input-label" for="entRe10">Re(&gamma;)</label>
@@ -79,7 +79,7 @@
         </div>
 
         <div class="ent-amp-group">
-            <span class="ent-amp-label">&delta; &nbsp;|11&rang;</span>
+            <span class="ent-amp-label">&delta; &nbsp;|11⟩</span>
             <div class="ent-amp-inputs">
                 <div>
                     <label class="operator-input-label" for="entRe11">Re(&delta;)</label>
@@ -96,8 +96,8 @@
 
     <div class="preset-row">
         <span>Quick states:</span>
-        <button type="button" class="preset-btn" onclick="setEntanglementPreset('zero')">|00&rang;</button>
-        <button type="button" class="preset-btn" onclick="setEntanglementPreset('product')">|+0&rang;</button>
+        <button type="button" class="preset-btn" onclick="setEntanglementPreset('zero')">|00⟩</button>
+        <button type="button" class="preset-btn" onclick="setEntanglementPreset('product')">|+0⟩</button>
         <button type="button" class="preset-btn" onclick="setEntanglementPreset('phi_plus')">&Phi;<sup>+</sup></button>
         <button type="button" class="preset-btn" onclick="setEntanglementPreset('phi_minus')">&Phi;<sup>&minus;</sup></button>
         <button type="button" class="preset-btn" onclick="setEntanglementPreset('psi_plus')">&Psi;<sup>+</sup></button>
@@ -159,25 +159,25 @@
 
         <div>
             <div class="twoq-formula ent-ket-box">
-                <span>Normalized |&psi;&rang; =</span>
+                <span>Normalized |&psi;⟩ =</span>
                 <strong id="entKetDisplay">&mdash;</strong>
             </div>
 
             <div class="amplitude-list ent-amp-list">
                 <div>
-                    <span>|00&rang;</span>
+                    <span>|00⟩</span>
                     <strong id="entAmp00">&mdash;</strong>
                 </div>
                 <div>
-                    <span>|01&rang;</span>
+                    <span>|01⟩</span>
                     <strong id="entAmp01">&mdash;</strong>
                 </div>
                 <div>
-                    <span>|10&rang;</span>
+                    <span>|10⟩</span>
                     <strong id="entAmp10">&mdash;</strong>
                 </div>
                 <div>
-                    <span>|11&rang;</span>
+                    <span>|11⟩</span>
                     <strong id="entAmp11">&mdash;</strong>
                 </div>
             </div>
@@ -190,28 +190,28 @@
     <div class="twoq-prob-grid">
         <div class="twoq-prob-card">
             <div class="twoq-prob-top">
-                <span>|00&rang;</span><strong id="entProb00">&mdash;</strong>
+                <span>|00⟩</span><strong id="entProb00">&mdash;</strong>
             </div>
             <div class="progress"><div class="progress-fill" id="entBar00" style="width:0%"></div></div>
         </div>
 
         <div class="twoq-prob-card">
             <div class="twoq-prob-top">
-                <span>|01&rang;</span><strong id="entProb01">&mdash;</strong>
+                <span>|01⟩</span><strong id="entProb01">&mdash;</strong>
             </div>
             <div class="progress"><div class="progress-fill" id="entBar01" style="width:0%"></div></div>
         </div>
 
         <div class="twoq-prob-card">
             <div class="twoq-prob-top">
-                <span>|10&rang;</span><strong id="entProb10">&mdash;</strong>
+                <span>|10⟩</span><strong id="entProb10">&mdash;</strong>
             </div>
             <div class="progress"><div class="progress-fill" id="entBar10" style="width:0%"></div></div>
         </div>
 
         <div class="twoq-prob-card">
             <div class="twoq-prob-top">
-                <span>|11&rang;</span><strong id="entProb11">&mdash;</strong>
+                <span>|11⟩</span><strong id="entProb11">&mdash;</strong>
             </div>
             <div class="progress"><div class="progress-fill" id="entBar11" style="width:0%"></div></div>
         </div>
@@ -245,28 +245,28 @@
 
         <div class="bell-card">
             <div class="bell-symbol">&Phi;<sup>+</sup></div>
-            <div class="bell-eq">(|00&rang; + |11&rang;) / &radic;2</div>
+            <div class="bell-eq">(|00⟩ + |11⟩) / &radic;2</div>
             <p>Even superposition of the two matching basis pairs.</p>
             <button class="small-btn" onclick="analyzeBellState('phi_plus')">Analyze this state</button>
         </div>
 
         <div class="bell-card">
             <div class="bell-symbol">&Phi;<sup>&minus;</sup></div>
-            <div class="bell-eq">(|00&rang; &minus; |11&rang;) / &radic;2</div>
+            <div class="bell-eq">(|00⟩ &minus; |11⟩) / &radic;2</div>
             <p>Matching pairs carrying a relative minus sign.</p>
             <button class="small-btn" onclick="analyzeBellState('phi_minus')">Analyze this state</button>
         </div>
 
         <div class="bell-card">
             <div class="bell-symbol">&Psi;<sup>+</sup></div>
-            <div class="bell-eq">(|01&rang; + |10&rang;) / &radic;2</div>
+            <div class="bell-eq">(|01⟩ + |10⟩) / &radic;2</div>
             <p>Even superposition of the two opposite pairs.</p>
             <button class="small-btn" onclick="analyzeBellState('psi_plus')">Analyze this state</button>
         </div>
 
         <div class="bell-card">
             <div class="bell-symbol">&Psi;<sup>&minus;</sup></div>
-            <div class="bell-eq">(|01&rang; &minus; |10&rang;) / &radic;2</div>
+            <div class="bell-eq">(|01⟩ &minus; |10⟩) / &radic;2</div>
             <p>The singlet state — antisymmetric under qubit exchange.</p>
             <button class="small-btn" onclick="analyzeBellState('psi_minus')">Analyze this state</button>
         </div>
