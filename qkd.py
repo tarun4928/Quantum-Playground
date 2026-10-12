@@ -55,11 +55,13 @@ def _measure_in_basis(state, basis):
 
     outcome = measure_once(working)
 
+    # Post-measurement collapsed state in computational basis:
+    # outcome 0 collapses to |0>, outcome 1 collapses to |1> = X|0>
+    post = zero_state()
     if outcome == 1:
-        post = apply_named_gate(working, "X")
-    else:
-        post = working
+        post = apply_named_gate(post, "X")
 
+    # Rotate back to the physical basis if measured in X basis
     if basis == "X":
         post = apply_named_gate(post, "H")
 

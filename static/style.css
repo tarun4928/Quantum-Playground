@@ -748,12 +748,51 @@ button:disabled,
 }
 
 
-/* FEATURE CARDS */
-
 .feature-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+.feature-grid-sub {
+    margin-top: 14px;
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 7px;
+}
+
+.card-pill {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    color: var(--muted);
+}
+
+.card-pill.accent {
+    border-color: rgba(166, 94, 46, 0.4);
+    color: var(--accent);
+    background: rgba(166, 94, 46, 0.06);
+}
+
+.card-pill.brass {
+    border-color: rgba(138, 109, 59, 0.4);
+    color: var(--brass-strong);
+    background: rgba(138, 109, 59, 0.06);
+}
+
+.card-pill.olive {
+    border-color: rgba(94, 124, 75, 0.4);
+    color: var(--olive);
+    background: var(--olive-tint);
 }
 
 .feature-card {
@@ -4044,6 +4083,198 @@ button:disabled,
     word-break: break-word;
 }
 
+/* Basis & state polarization visualization */
+.qkd-card-vis {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.qkd-polarization-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--inset);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    width: 100%;
+}
+
+.qkd-pol-svg {
+    width: 86px;
+    height: 86px;
+    overflow: visible;
+}
+
+.qkd-pol-circle {
+    fill: none;
+    stroke: var(--border-strong);
+    stroke-width: 1.2;
+    stroke-dasharray: 2 3;
+}
+
+.qkd-pol-axes line {
+    stroke-width: 1.4;
+    transition: stroke 0.25s, stroke-width 0.25s, opacity 0.25s;
+}
+
+.qkd-pol-rect-axes line {
+    stroke: var(--border-strong);
+    opacity: 0.4;
+}
+
+.qkd-pol-diag-axes line {
+    stroke: var(--border-strong);
+    opacity: 0.4;
+    stroke-dasharray: 2 2;
+}
+
+/* Active basis highlight */
+.qkd-polarization-box.basis-rect .qkd-pol-rect-axes line {
+    stroke: var(--accent);
+    stroke-width: 2.2;
+    opacity: 1;
+}
+
+.qkd-polarization-box.basis-diag .qkd-pol-diag-axes line {
+    stroke: var(--brass-strong);
+    stroke-width: 2.2;
+    stroke-dasharray: none;
+    opacity: 1;
+}
+
+.qkd-polarization-box.basis-rect.eve .qkd-pol-rect-axes line,
+.qkd-polarization-box.basis-diag.eve .qkd-pol-diag-axes line {
+    stroke: var(--rust);
+}
+
+.qkd-pol-vec {
+    stroke: var(--accent);
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    transition: x2 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), y2 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.qkd-pol-vec.eve {
+    stroke: var(--rust);
+}
+
+.qkd-pol-vec.bob {
+    stroke: var(--brass-strong);
+}
+
+.qkd-pol-dot {
+    fill: var(--accent);
+    transition: cx 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), cy 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.qkd-pol-dot.eve {
+    fill: var(--rust);
+}
+
+.qkd-pol-dot.bob {
+    fill: var(--brass-strong);
+}
+
+.qkd-pol-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    text-align: center;
+    min-height: 16px;
+}
+
+.qkd-pol-badge.eve {
+    color: var(--rust);
+}
+
+.qkd-pol-badge.bob {
+    color: var(--brass-strong);
+}
+
+/* Basis reference guide banner */
+.qkd-basis-reference {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.qkd-basis-ref-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+}
+
+.qkd-basis-ref-card.rect {
+    border-left: 3px solid var(--accent);
+}
+
+.qkd-basis-ref-card.diag {
+    border-left: 3px solid var(--brass-strong);
+}
+
+.qkd-basis-ref-icon svg {
+    width: 44px;
+    height: 44px;
+}
+
+.qkd-ref-circle {
+    fill: none;
+    stroke: var(--border-strong);
+    stroke-width: 1;
+    stroke-dasharray: 2 2;
+}
+
+.qkd-ref-axis {
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.qkd-basis-ref-card.rect .qkd-ref-axis {
+    stroke: var(--accent);
+}
+
+.qkd-basis-ref-card.diag .qkd-ref-axis {
+    stroke: var(--brass-strong);
+}
+
+.qkd-basis-ref-body strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    color: var(--text);
+}
+
+.qkd-basis-ref-body p {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.45;
+    margin: 0;
+}
+
+.qkd-basis-ref-body code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+@media (max-width: 768px) {
+    .qkd-basis-reference {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* circuit wire for the current qubit */
 
 .qkd-wire-row {
@@ -4103,6 +4334,19 @@ button:disabled,
 
 .qkd-row-lost td:last-child {
     color: var(--muted);
+}
+
+.qkd-basis-hint {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    font-weight: normal;
+    margin-left: 2px;
+}
+
+.qkd-bcell small {
+    font-size: 9px;
+    opacity: 0.8;
 }
 
 /* sift & verify */

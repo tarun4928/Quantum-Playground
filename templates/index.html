@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Quantum Playground{% endblock %}
+{% block title %}Quantum Playground | Interactive Quantum Computing Labs{% endblock %}
 
 {% block content %}
 
@@ -9,7 +9,7 @@
     <div class="hero-text">
 
         <div class="eyebrow">
-            Interactive Quantum Simulator
+            Interactive Quantum Simulator &amp; Laboratory Suite
         </div>
 
         <h1>
@@ -18,19 +18,23 @@
         </h1>
 
         <p>
-            Explore the fascinating world of quantum computing
-            through interactive experiments, visualizations,
-            quantum gates and measurements.
+            An interactive, physically rigorous environment to explore quantum states,
+            build multi-gate circuits, simulate projective measurements, examine entanglement,
+            distribute keys with BB84, probe magnetic fields with Larmor precession, and tackle state transformation puzzles.
         </p>
 
         <div class="hero-buttons">
 
             <a href="/explore" class="primary-btn">
-                Start Exploring →
+                Launch Lab Suite →
+            </a>
+
+            <a href="/challenge" class="secondary-btn">
+                State Challenge
             </a>
 
             <a href="/learn" class="secondary-btn">
-                Learn the Basics
+                Quantum Guide
             </a>
 
         </div>
@@ -89,15 +93,16 @@
 </section>
 
 
+<!-- SECTION: ALL LABORATORIES -->
 <section class="section-header">
 
     <div>
-        <p class="section-label">Experiment</p>
+        <p class="section-label">Interactive Modules</p>
         <h2>Quantum Laboratories</h2>
     </div>
 
     <p>
-        Choose an experiment and start exploring.
+        Explore fundamental physics, circuits, cryptography, and quantum sensing.
     </p>
 
 </section>
@@ -105,8 +110,8 @@
 
 <section class="feature-grid">
 
+    <!-- Lab 02: Single Qubit -->
     <a href="/explore" class="feature-card">
-
         <div class="card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="12" cy="12" r="8.5"/>
@@ -115,24 +120,21 @@
                 <circle cx="18" cy="6.5" r="1.2" fill="currentColor" stroke="none"/>
             </svg>
         </div>
-
         <div>
-            <span class="card-tag">Lab 02</span>
-            <h3>Single Qubit</h3>
-
+            <div class="card-header-row">
+                <span class="card-tag">Lab 02</span>
+                <span class="card-pill">Bloch Sphere</span>
+            </div>
+            <h3>Single Qubit Explorer</h3>
             <p>
-                Explore quantum states and visualize
-                them on the Bloch sphere.
+                Define arbitrary superpositions, adjust polar angles (&theta;, &phi;), inspect state vectors, and track rotations on a 3D Bloch sphere.
             </p>
         </div>
-
         <span class="card-arrow">→</span>
-
     </a>
 
-
+    <!-- Lab 03: Circuit Lab -->
     <a href="/circuit" class="feature-card">
-
         <div class="card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <line x1="2" y1="12" x2="22" y2="12"/>
@@ -140,24 +142,21 @@
                 <rect x="14" y="8" width="5" height="8" rx="1"/>
             </svg>
         </div>
-
         <div>
-            <span class="card-tag">Lab 03</span>
+            <div class="card-header-row">
+                <span class="card-tag">Lab 03</span>
+                <span class="card-pill">Quantum Gates</span>
+            </div>
             <h3>Circuit Lab</h3>
-
             <p>
-                Build quantum circuits using
-                X, Y, Z, H and other gates.
+                Build single and multi-gate sequences using Pauli-X, Y, Z, Hadamard, Phase (S), &pi;/8 (T), and custom rotations with real-time state evolution.
             </p>
         </div>
-
         <span class="card-arrow">→</span>
-
     </a>
 
-
+    <!-- Lab 04: Measurement Lab -->
     <a href="/measurement" class="feature-card">
-
         <div class="card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <line x1="3" y1="20" x2="21" y2="20"/>
@@ -166,24 +165,21 @@
                 <line x1="17" y1="20" x2="17" y2="4"/>
             </svg>
         </div>
-
         <div>
-            <span class="card-tag">Lab 04</span>
+            <div class="card-header-row">
+                <span class="card-tag">Lab 04</span>
+                <span class="card-pill">Born Rule</span>
+            </div>
             <h3>Measurement Lab</h3>
-
             <p>
-                Simulate measurements and observe
-                quantum probabilities.
+                Simulate projective measurements and wave-function collapse. Run single shots or thousands of repeated trials to verify probability distributions.
             </p>
         </div>
-
         <span class="card-arrow">→</span>
-
     </a>
 
-
+    <!-- Lab 05: Entanglement Lab -->
     <a href="/entanglement" class="feature-card">
-
         <div class="card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="7.5" cy="12" r="4"/>
@@ -191,46 +187,190 @@
                 <line x1="11.5" y1="12" x2="12.5" y2="12"/>
             </svg>
         </div>
-
         <div>
-            <span class="card-tag">Lab 05</span>
+            <div class="card-header-row">
+                <span class="card-tag">Lab 05</span>
+                <span class="card-pill">2-Qubit Bell States</span>
+            </div>
             <h3>Entanglement Lab</h3>
-
             <p>
-                Create two-qubit systems and
-                explore quantum entanglement.
+                Create two-qubit systems with CNOT and Hadamard gates. Prepare all four Bell states (|&Phi;&plusmn;&rang;, |&Psi;&plusmn;&rang;) and observe non-local correlations.
             </p>
         </div>
-
         <span class="card-arrow">→</span>
+    </a>
 
+    <!-- Lab 06: Operator Lab -->
+    <a href="/operator" class="feature-card">
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+            </svg>
+        </div>
+        <div>
+            <div class="card-header-row">
+                <span class="card-tag">Lab 06</span>
+                <span class="card-pill brass">Matrix Engine</span>
+            </div>
+            <h3>Operator Lab</h3>
+            <p>
+                Input custom 2&times;2 complex matrices. Check unitarity ($U^\dagger U = I$), compute eigenvalues and eigenvectors, and visualize operator actions in 3D.
+            </p>
+        </div>
+        <span class="card-arrow">→</span>
+    </a>
+
+    <!-- Lab 07: State Challenge -->
+    <a href="/challenge" class="feature-card">
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+        </div>
+        <div>
+            <div class="card-header-row">
+                <span class="card-tag">Lab 07</span>
+                <span class="card-pill accent">Interactive Game</span>
+            </div>
+            <h3>Quantum State Challenge</h3>
+            <p>
+                Solve state-transformation puzzles across Easy, Medium, and Hard tiers. Navigate the Bloch sphere to hit target states in the minimal number of gate steps.
+            </p>
+        </div>
+        <span class="card-arrow">→</span>
+    </a>
+
+    <!-- Lab 08: QKD BB84 -->
+    <a href="/qkd" class="feature-card">
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+        </div>
+        <div>
+            <div class="card-header-row">
+                <span class="card-tag">Lab 08</span>
+                <span class="card-pill olive">Cryptography</span>
+            </div>
+            <h3>BB84 Key Distribution</h3>
+            <p>
+                Simulate quantum key distribution over an optical channel. Encode bits in Rectilinear (+) and Diagonal (&times;) bases, detect Eve's eavesdropping, and sift secret keys.
+            </p>
+        </div>
+        <span class="card-arrow">→</span>
+    </a>
+
+    <!-- Lab 09: Quantum Magnetometer -->
+    <a href="/sensing" class="feature-card">
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                <circle cx="12" cy="12" r="9"/>
+            </svg>
+        </div>
+        <div>
+            <div class="card-header-row">
+                <span class="card-tag">Lab 09</span>
+                <span class="card-pill brass">Quantum Sensing</span>
+            </div>
+            <h3>Quantum Magnetometer</h3>
+            <p>
+                Apply magnetic field vectors and observe Larmor precession of spin states. Explore Ramsey interferometry, decoherence, and high-precision magnetic sensing.
+            </p>
+        </div>
+        <span class="card-arrow">→</span>
     </a>
 
 </section>
 
 
+<!-- SECTION: LEARNING & SYSTEM OVERVIEW -->
+<section class="section-header">
+
+    <div>
+        <p class="section-label">Curriculum &amp; Tools</p>
+        <h2>Guides &amp; Reference Materials</h2>
+    </div>
+
+    <p>
+        Structured theory, mathematical foundations, and system help.
+    </p>
+
+</section>
+
+<section class="feature-grid">
+
+    <a href="/learn" class="feature-card">
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+        </div>
+        <div>
+            <div class="card-header-row">
+                <span class="card-tag">Theory</span>
+                <span class="card-pill">Curriculum</span>
+            </div>
+            <h3>Quantum Handbook &amp; Theory</h3>
+            <p>
+                From Dirac notation and Hilbert spaces to unitary matrices, Bell's theorem, and cryptographic protocols with full mathematical derivations.
+            </p>
+        </div>
+        <span class="card-arrow">→</span>
+    </a>
+
+    <a href="/help" class="feature-card">
+        <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+        </div>
+        <div>
+            <div class="card-header-row">
+                <span class="card-tag">Support</span>
+                <span class="card-pill">User Manual</span>
+            </div>
+            <h3>Help &amp; Lab Guidelines</h3>
+            <p>
+                Step-by-step instructions on operating each lab, configuring simulation parameters, shortcuts, and troubleshooting common questions.
+            </p>
+        </div>
+        <span class="card-arrow">→</span>
+    </a>
+
+</section>
+
+
+<!-- PLATFORM STATS / METRIC STRIP -->
 <section class="info-strip">
 
     <div>
-        <strong>1</strong>
-        <span>Qubit Explorer</span>
+        <strong>8</strong>
+        <span>Active Quantum Labs</span>
     </div>
 
     <div>
-        <strong>6+</strong>
-        <span>Quantum Gates</span>
+        <strong>10+</strong>
+        <span>Native Quantum Gates</span>
     </div>
 
     <div>
-        <strong>&infin;</strong>
-        <span>Experiments</span>
+        <strong>3D</strong>
+        <span>Bloch Sphere Visuals</span>
     </div>
 
     <div>
         <strong>100%</strong>
-        <span>Simulation</span>
+        <span>Real-Time Physics Engine</span>
     </div>
 
 </section>
 
 {% endblock %}
+

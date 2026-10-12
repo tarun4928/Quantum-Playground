@@ -4648,6 +4648,79 @@ function qkdGatesText(gates) {
 /* Photon travel time — keep in sync with .qkd-photon's CSS transition. */
 const QKD_TRAVEL_MS = 1000;
 
+/* Polarization vector coordinates on the circle (radius = 38)
+   Rectilinear (+):
+     |0⟩ (bit 0): (0, -38) - vertical up
+     |1⟩ (bit 1): (38, 0)  - horizontal right
+   Diagonal (×):
+     |+⟩ (bit 0): (27, -27) - diagonal 45 deg (top-right)
+     |−⟩ (bit 1): (-27, -27) - antidiagonal 135 deg (top-left)
+*/
+function qkdBasisInfo(basis, bit) {
+    const isRect = basis === "Z" || basis === "+";
+    const basisSymbol = isRect ? "+" : "×";
+    const basisName = isRect ? "Rectilinear (+)" : "Diagonal (×)";
+    let ket = "|0⟩";
+    let x = 0;
+    let y = -38;
+
+    if (isRect) {
+        if (bit === 1) {
+            ket = "|1⟩";
+            x = 38;
+            y = 0;
+        } else {
+            ket = "|0⟩";
+            x = 0;
+            y = -38;
+        }
+    } else {
+        if (bit === 1) {
+            ket = "|−⟩";
+            x = -27;
+            y = -27;
+        } else {
+            ket = "|+⟩";
+            x = 27;
+            y = -27;
+        }
+    }
+
+    return { isRect, basisSymbol, basisName, ket, x, y };
+}
+
+function updateQKDPolarizationVis(prefix, basis, bit, customLabel) {
+    const box = document.getElementById(`qkd${prefix}PolBox`);
+    const vec = document.getElementById(`qkd${prefix}PolVec`);
+    const dot = document.getElementById(`qkd${prefix}PolDot`);
+    const badge = document.getElementById(`qkd${prefix}PolBadge`);
+
+    if (!box || !vec || !dot) return;
+
+    if (!basis) {
+        box.classList.remove("basis-rect", "basis-diag");
+        vec.setAttribute("x2", "0");
+        vec.setAttribute("y2", "0");
+        dot.setAttribute("cx", "0");
+        dot.setAttribute("cy", "0");
+        if (badge) badge.textContent = "—";
+        return;
+    }
+
+    const info = qkdBasisInfo(basis, bit);
+    box.classList.toggle("basis-rect", info.isRect);
+    box.classList.toggle("basis-diag", !info.isRect);
+
+    vec.setAttribute("x2", String(info.x));
+    vec.setAttribute("y2", String(info.y));
+    dot.setAttribute("cx", String(info.x));
+    dot.setAttribute("cy", String(info.y));
+
+    if (badge) {
+        badge.textContent = customLabel || `${info.basisName} ${info.ket}`;
+    }
+}
+
 function revealQKDItem(q, total) {
     // Invalidate this item's pending timeouts if a reset or a new
     // run happens before they fire.
@@ -4677,11 +4750,17 @@ function revealQKDItem(q, total) {
     }
     if (photonKet) photonKet.textContent = q.prepared?.symbol || qkdKet(q.prepared);
 
-    set("qkdAliceBasis", q.alice_basis + " basis");
+    const aliceInfo = qkdBasisInfo(q.alice_basis, q.alice_bit);
+    set("qkdAliceBasis", `${aliceInfo.basisName}`);
     set("qkdAliceBit", q.alice_bit);
-    set("qkdAliceBasisName", q.alice_basis);
+    set("qkdAliceBasisName", `${q.alice_basis} (${aliceInfo.basisSymbol})`);
     set("qkdAliceGates", qkdGatesText(q.alice_gates));
-    set("qkdAliceKet", qkdKet(q.prepared));
+    set("qkdAliceKet", q.prepared?.symbol || qkdKet(q.prepared));
+    updateQKDPolarizationVis("Alice", q.alice_basis, q.alice_bit);
+
+    // Reset Bob and Eve visuals for this new qubit until transmission arrives
+    updateQKDPolarizationVis("Eve", null);
+    updateQKDPolarizationVis("Bob", null);
 
     // Timeline: depart → (arrive Eve → Eve intercepts → depart Eve) → arrive Bob → measure.
     const departAt = 500;
@@ -4701,12 +4780,14 @@ function revealQKDItem(q, total) {
         // Eve intercepts exactly when the photon reaches her station.
         setTimeout(() => {
             if (!stillCurrent()) return;
-            set("qkdEveBasis", q.eve.basis + " basis");
-            set("qkdEveBasisName", q.eve.basis);
+            const eveInfo = qkdBasisInfo(q.eve.basis, q.eve.result);
+            set("qkdEveBasis", `${eveInfo.basisName}`);
+            set("qkdEveBasisName", `${q.eve.basis} (${eveInfo.basisSymbol})`);
             set("qkdEveResult", q.eve.result);
             set("qkdEveGates", qkdGatesText(q.eve.gates));
-            set("qkdEveKet", qkdKet(q.eve.resent));
+            set("qkdEveKet", q.eve.resent?.symbol || qkdKet(q.eve.resent));
             if (photonKet) photonKet.textContent = q.eve.resent?.symbol || qkdKet(q.eve.resent);
+            updateQKDPolarizationVis("Eve", q.eve.basis, q.eve.result);
         }, eveArriveAt);
 
         // ...and resends the collapsed state onward to Bob.
@@ -4720,11 +4801,13 @@ function revealQKDItem(q, total) {
     setTimeout(() => {
         if (!stillCurrent()) return;
         setQKDStage("measure");
-        set("qkdBobBasis", q.bob_basis + " basis");
-        set("qkdBobBasisName", q.bob_basis);
+        const bobInfo = qkdBasisInfo(q.bob_basis, q.bob_result);
+        set("qkdBobBasis", `${bobInfo.basisName}`);
+        set("qkdBobBasisName", `${q.bob_basis} (${bobInfo.basisSymbol})`);
         set("qkdBobGates", qkdGatesText(q.bob_gates));
-        set("qkdBobKet", q.eve ? qkdKet(q.eve.resent) : qkdKet(q.prepared));
+        set("qkdBobKet", q.eve ? (q.eve.resent?.symbol || qkdKet(q.eve.resent)) : (q.prepared?.symbol || qkdKet(q.prepared)));
         set("qkdBobResult", q.bob_result);
+        updateQKDPolarizationVis("Bob", q.bob_basis, q.bob_result);
 
         renderQKDWire(q);
         appendQKDLogRow(q);
@@ -4761,16 +4844,20 @@ function appendQKDLogRow(q) {
     const empty = body.querySelector(".table-empty");
     if (empty) empty.parentElement.remove();
 
+    const aliceSym = q.alice_basis === "Z" ? "+ (rect)" : "× (diag)";
+    const eveSym = q.eve ? (q.eve.basis === "Z" ? "+ (rect)" : "× (diag)") : "&mdash;";
+    const bobSym = q.bob_basis === "Z" ? "+ (rect)" : "× (diag)";
+
     const tr = document.createElement("tr");
     tr.className = q.kept ? "qkd-row-kept" : "qkd-row-lost";
     tr.innerHTML = `
         <td><strong>#${q.index + 1}</strong></td>
         <td class="qkd-mono">${q.alice_bit}</td>
-        <td>${q.alice_basis}</td>
+        <td><strong>${q.alice_basis}</strong> <span class="qkd-basis-hint">${aliceSym}</span></td>
         <td class="qkd-mono">${qkdGatesText(q.alice_gates)}</td>
-        <td>${q.eve ? q.eve.basis : "&mdash;"}</td>
+        <td>${q.eve ? `<strong>${q.eve.basis}</strong> <span class="qkd-basis-hint">${eveSym}</span>` : "&mdash;"}</td>
         <td class="qkd-mono">${q.eve ? q.eve.result : "&mdash;"}</td>
-        <td>${q.bob_basis}</td>
+        <td><strong>${q.bob_basis}</strong> <span class="qkd-basis-hint">${bobSym}</span></td>
         <td class="qkd-mono">${qkdGatesText(q.bob_gates)}</td>
         <td class="qkd-mono">${q.bob_result}</td>
         <td>${q.kept ? "&#10003; keep" : "&#10007; drop"}</td>
@@ -4946,14 +5033,16 @@ function animateQKDSift(transcript) {
         idx.textContent = i + 1;
         idxCells.appendChild(idx);
 
+        const aInfo = qkdBasisInfo(q.alice_basis, q.alice_bit);
         const a = document.createElement("span");
         a.className = "qkd-bcell";
-        a.textContent = q.alice_basis;
+        a.innerHTML = `${q.alice_basis} <small>(${aInfo.basisSymbol})</small>`;
         aliceCells.appendChild(a);
 
+        const bInfo = qkdBasisInfo(q.bob_basis, q.bob_result);
         const b = document.createElement("span");
         b.className = "qkd-bcell";
-        b.textContent = q.bob_basis;
+        b.innerHTML = `${q.bob_basis} <small>(${bInfo.basisSymbol})</small>`;
         bobCells.appendChild(b);
 
         const v = document.createElement("span");
@@ -5081,6 +5170,10 @@ function clearQKDDisplays() {
      "qkdBobBasis", "qkdBobBasisName", "qkdBobGates", "qkdBobKet", "qkdBobResult",
      "qkdSampleSize", "qkdSampleErrors", "qkdErrorRate", "qkdKeyLength"
     ].forEach(id => set(id, "—"));
+
+    updateQKDPolarizationVis("Alice", null);
+    updateQKDPolarizationVis("Eve", null);
+    updateQKDPolarizationVis("Bob", null);
 
     const photon = document.getElementById("qkdPhoton");
     if (photon) photon.style.left = "8%";
