@@ -4612,6 +4612,89 @@ async function stepQKD() {
     advanceQKD();
 }
 
+async function skipToQKDSift() {
+    stopQKDTimer();
+
+    if (!qkdTranscript) {
+        try {
+            qkdTranscript = await fetchQKDTranscript();
+        } catch (error) {
+            console.error(error);
+            alert(`QKD Error: ${error.message}`);
+            return;
+        }
+        clearQKDDisplays();
+        qkdCursor = 0;
+    }
+
+    if (qkdFinalized) return;
+
+    // Invalidate any ongoing in-flight animations/timers from current qubit
+    qkdRunToken += 1;
+
+    const items = qkdTranscript.qubits || [];
+    const total = items.length;
+
+    // Fast-forward any remaining qubits into the transmission log
+    while (qkdCursor < total) {
+        appendQKDLogRow(items[qkdCursor]);
+        qkdCursor += 1;
+    }
+
+    // Inspect the last qubit on the display cards & wire
+    if (total > 0) {
+        const lastQ = items[total - 1];
+        const set = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+
+        const aliceInfo = qkdBasisInfo(lastQ.alice_basis, lastQ.alice_bit);
+        set("qkdAliceBasis", `${aliceInfo.basisName}`);
+        set("qkdAliceBit", lastQ.alice_bit);
+        set("qkdAliceBasisName", `${lastQ.alice_basis} (${aliceInfo.basisSymbol})`);
+        set("qkdAliceGates", qkdGatesText(lastQ.alice_gates));
+        set("qkdAliceKet", lastQ.prepared?.symbol || qkdKet(lastQ.prepared));
+        updateQKDPolarizationVis("Alice", lastQ.alice_basis, lastQ.alice_bit);
+
+        if (lastQ.eve) {
+            const eveInfo = qkdBasisInfo(lastQ.eve.basis, lastQ.eve.result);
+            set("qkdEveBasis", `${eveInfo.basisName}`);
+            set("qkdEveBasisName", `${lastQ.eve.basis} (${eveInfo.basisSymbol})`);
+            set("qkdEveResult", lastQ.eve.result);
+            set("qkdEveGates", qkdGatesText(lastQ.eve.gates));
+            set("qkdEveKet", lastQ.eve.resent?.symbol || qkdKet(lastQ.eve.resent));
+            updateQKDPolarizationVis("Eve", lastQ.eve.basis, lastQ.eve.result);
+        } else {
+            updateQKDPolarizationVis("Eve", null);
+        }
+
+        const bobInfo = qkdBasisInfo(lastQ.bob_basis, lastQ.bob_result);
+        set("qkdBobBasis", `${bobInfo.basisName}`);
+        set("qkdBobBasisName", `${lastQ.bob_basis} (${bobInfo.basisSymbol})`);
+        set("qkdBobGates", qkdGatesText(lastQ.bob_gates));
+        set("qkdBobKet", lastQ.eve ? (lastQ.eve.resent?.symbol || qkdKet(lastQ.eve.resent)) : (lastQ.prepared?.symbol || qkdKet(lastQ.prepared)));
+        set("qkdBobResult", lastQ.bob_result);
+        updateQKDPolarizationVis("Bob", lastQ.bob_basis, lastQ.bob_result);
+
+        renderQKDWire(lastQ);
+
+        const photon = document.getElementById("qkdPhoton");
+        if (photon) photon.style.left = "92%";
+        const photonKet = document.getElementById("qkdPhotonKet");
+        if (photonKet) photonKet.textContent = lastQ.eve ? (lastQ.eve.resent?.symbol || qkdKet(lastQ.eve.resent)) : (lastQ.prepared?.symbol || qkdKet(lastQ.prepared));
+
+        const status = document.getElementById("qkdChannelStatus");
+        if (status) status.textContent = `All ${total} qubits transmitted`;
+
+        const badge = document.getElementById("qkdLogCount");
+        if (badge) badge.textContent = `${total} qubits`;
+    }
+
+    qkdFinalized = true;
+    finalizeQKD();
+}
+
 function advanceQKD() {
     if (!qkdTranscript || qkdFinalized) return false;
 
