@@ -47,11 +47,6 @@ def circuit():
     return render_template("circuit.html")
 
 
-@app.route("/measurement")
-def measurement():
-    return render_template("measurement.html")
-
-
 @app.route("/entanglement")
 def entanglement():
     return render_template("entanglement.html")
@@ -650,7 +645,16 @@ def run_circuit_api():
         if not isinstance(gates, list):
             raise ValueError("gates must be a list.")
 
-        state = zero_state()
+        initial_choice = str(data.get("initial_state", "0"))
+        initial_states = {
+            "0": np.array([1 + 0j, 0 + 0j], dtype=complex),
+            "1": np.array([0 + 0j, 1 + 0j], dtype=complex),
+            "+": np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex),
+            "-": np.array([1 / np.sqrt(2), -1 / np.sqrt(2)], dtype=complex),
+        }
+        if initial_choice not in initial_states:
+            raise ValueError("Initial circuit state must be 0, 1, +, or -.")
+        state = initial_states[initial_choice].copy()
         steps = []
 
         for gate_name in gates:
@@ -670,6 +674,7 @@ def run_circuit_api():
         return jsonify({
             "success": True,
             "gates": gates,
+            "initial_state": initial_choice,
             "final_state": final_payload["state"],
             "final_state_dictionary": final_payload["state_dictionary"],
             "probabilities": final_payload["probabilities"],

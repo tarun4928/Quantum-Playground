@@ -21,6 +21,17 @@
 
 </div>
 
+<section class="panel circuit-input-panel">
+    <div class="panel-title"><div><span class="panel-number">00</span><h2>Initial Qubit Input</h2></div></div>
+    <p>Choose the starting single-qubit state for this circuit. This input is independent of the Qubit Lab state.</p>
+    <label class="input-label" for="circuitInitialState">Starting state</label>
+    <select id="circuitInitialState" class="number-input">
+        <option value="0">|0⟩</option>
+        <option value="1">|1⟩</option>
+        <option value="+">|+⟩ = (|0⟩ + |1⟩)/√2</option>
+        <option value="-">|−⟩ = (|0⟩ − |1⟩)/√2</option>
+    </select>
+</section>
 
 
 <!-- =========================================

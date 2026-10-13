@@ -837,7 +837,8 @@ async function runCircuit() {
 
                     body:
                         JSON.stringify({
-                            gates: circuit
+                            gates: circuit,
+                            initial_state: document.getElementById("circuitInitialState")?.value || "0"
                         })
 
                 }
@@ -2216,6 +2217,13 @@ function twoQGate(
 /* =====================================================
    CREATE BELL STATE
 ===================================================== */
+
+function applySelectedTwoQGate() {
+    const selector = document.getElementById("selectedTwoQGate");
+    if (!selector) return;
+    twoQGate(selector.value);
+}
+
 
 function createTwoQBellState() {
 
