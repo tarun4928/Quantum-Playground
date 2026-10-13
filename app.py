@@ -42,14 +42,14 @@ def explore():
     return render_template("explore.html")
 
 
+@app.route("/twoqubit")
+def twoqubit():
+    return render_template("twoqubit.html")
+
+
 @app.route("/circuit")
 def circuit():
     return render_template("circuit.html")
-
-
-@app.route("/entanglement")
-def entanglement():
-    return render_template("entanglement.html")
 
 
 @app.route("/learn")
@@ -645,16 +645,33 @@ def run_circuit_api():
         if not isinstance(gates, list):
             raise ValueError("gates must be a list.")
 
+        # Support both preset states and custom state vectors
         initial_choice = str(data.get("initial_state", "0"))
-        initial_states = {
-            "0": np.array([1 + 0j, 0 + 0j], dtype=complex),
-            "1": np.array([0 + 0j, 1 + 0j], dtype=complex),
-            "+": np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex),
-            "-": np.array([1 / np.sqrt(2), -1 / np.sqrt(2)], dtype=complex),
-        }
-        if initial_choice not in initial_states:
-            raise ValueError("Initial circuit state must be 0, 1, +, or -.")
-        state = initial_states[initial_choice].copy()
+        custom_state = data.get("custom_state")
+
+        if custom_state and isinstance(custom_state, list) and len(custom_state) == 2:
+            # Parse custom state vector
+            values = []
+            for item in custom_state:
+                if not isinstance(item, dict):
+                    raise ValueError("Each amplitude must contain real and imaginary values.")
+                real = float(item.get("real", 0))
+                imaginary = float(item.get("imaginary", 0))
+                if not np.isfinite(real) or not np.isfinite(imaginary):
+                    raise ValueError("State amplitudes must be finite numbers.")
+                values.append(complex(real, imaginary))
+            state = normalize_state(np.array(values, dtype=complex))
+            initial_choice = "custom"
+        else:
+            initial_states = {
+                "0": np.array([1 + 0j, 0 + 0j], dtype=complex),
+                "1": np.array([0 + 0j, 1 + 0j], dtype=complex),
+                "+": np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex),
+                "-": np.array([1 / np.sqrt(2), -1 / np.sqrt(2)], dtype=complex),
+            }
+            if initial_choice not in initial_states:
+                raise ValueError("Initial circuit state must be 0, 1, +, or -.")
+            state = initial_states[initial_choice].copy()
         steps = []
 
         for gate_name in gates:

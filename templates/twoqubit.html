@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+
+{% block title %}Two Qubit Lab | Quantum Playground{% endblock %}
+
+{% block head %}
+
+<!-- Plotly for 3D Bloch Sphere -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<!-- MathJax for quantum-state notation -->
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)']],
+            displayMath: [['\\[', '\\]']]
+        }
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+    .entanglement-link-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 24px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        margin-top: 12px;
+    }
+    .entanglement-link-content h3 {
+        margin-bottom: 8px;
+        color: var(--text);
+    }
+    .entanglement-link-content p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    @media (max-width: 700px) {
+        .entanglement-link-box {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .entanglement-link-box .primary-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+
+    <p class="section-label">
+        Lab 03 · Two Qubit Lab
+    </p>
+
+    <h1>
+        Two Qubit Lab
+    </h1>
+
+    <p>
+        Build and transform a two-qubit quantum state using single-qubit gates and two-qubit operations.
+        Define the initial state as a 4-component complex vector, apply gates, and analyze entanglement.
+    </p>
+
+</div>
+
+<div class="twoq-grid">
+
+    <!-- =============================================
+         SECTION 1: DEFINE TWO-QUBIT STATE
+    ============================================== -->
+    <section class="panel">
+
+        <div class="panel-title">
+            <div>
+                <span class="panel-number">01</span>
+                <h2>Define the Two-Qubit State</h2>
+            </div>
+            <span class="panel-subtitle">4 × 1 complex column vector</span>
+        </div>
+
+        <div class="ent-equation-row">
+            |ψ⟩ = α|00⟩ + β|01⟩ + γ|10⟩ + δ|11⟩
+        </div>
+
+        <div class="ent-state-grid">
+
+            <div class="ent-amp-group">
+                <span class="ent-amp-label">α &nbsp;|00⟩</span>
+                <div class="ent-amp-inputs">
+                    <div>
+                        <label class="operator-input-label" for="twoQRe00">Re(α)</label>
+                        <input id="twoQRe00" class="operator-input" type="number" step="any" placeholder="0" value="1">
+                    </div>
+                    <div>
+                        <label class="operator-input-label" for="twoQIm00">Im(α)</label>
+                        <input id="twoQIm00" class="operator-input" type="number" step="any" placeholder="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="ent-amp-group">
+                <span class="ent-amp-label">β &nbsp;|01⟩</span>
+                <div class="ent-amp-inputs">
+                    <div>
+                        <label class="operator-input-label" for="twoQRe01">Re(β)</label>
+                        <input id="twoQRe01" class="operator-input" type="number" step="any" placeholder="0" value="0">
+                    </div>
+                    <div>
+                        <label class="operator-input-label" for="twoQIm01">Im(β)</label>
+                        <input id="twoQIm01" class="operator-input" type="number" step="any" placeholder="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="ent-amp-group">
+                <span class="ent-amp-label">γ &nbsp;|10⟩</span>
+                <div class="ent-amp-inputs">
+                    <div>
+                        <label class="operator-input-label" for="twoQRe10">Re(γ)</label>
+                        <input id="twoQRe10" class="operator-input" type="number" step="any" placeholder="0" value="0">
+                    </div>
+                    <div>
+                        <label class="operator-input-label" for="twoQIm10">Im(γ)</label>
+                        <input id="twoQIm10" class="operator-input" type="number" step="any" placeholder="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="ent-amp-group">
+                <span class="ent-amp-label">δ &nbsp;|11⟩</span>
+                <div class="ent-amp-inputs">
+                    <div>
+                        <label class="operator-input-label" for="twoQRe11">Re(δ)</label>
+                        <input id="twoQRe11" class="operator-input" type="number" step="any" placeholder="0" value="0">
+                    </div>
+                    <div>
+                        <label class="operator-input-label" for="twoQIm11">Im(δ)</label>
+                        <input id="twoQIm11" class="operator-input" type="number" step="any" placeholder="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="preset-row">
+            <span>Quick states:</span>
+            <button type="button" class="preset-btn" onclick="setTwoQubitPreset('zero')">|00⟩</button>
+            <button type="button" class="preset-btn" onclick="setTwoQubitPreset('product')">|+0⟩</button>
+            <button type="button" class="preset-btn" onclick="setTwoQubitPreset('phi_plus')">Φ<sup>+</sup></button>
+            <button type="button" class="preset-btn" onclick="setTwoQubitPreset('phi_minus')">Φ<sup>−</sup></button>
+            <button type="button" class="preset-btn" onclick="setTwoQubitPreset('psi_plus')">Ψ<sup>+</sup></button>
+            <button type="button" class="preset-btn" onclick="setTwoQubitPreset('psi_minus')">Ψ<sup>−</sup></button>
+        </div>
+
+        <p class="operator-help">
+            Enter any non-zero four-component state. The simulator normalizes it before using it.
+        </p>
+
+        <button class="primary-btn full-btn" onclick="setTwoQubitStateFromInputs()">
+            Set State
+        </button>
+
+        <div id="twoQStateMessage" class="initial-state-message">
+            Enter values above, then click Set State.
+        </div>
+
+    </section>
+
+    <!-- =============================================
+         SECTION 2: QUANTUM GATE CONTROLS
+    ============================================== -->
+    <section class="panel">
+
+        <div class="panel-title">
+            <div>
+                <span class="panel-number">02</span>
+                <h2>Two-Qubit Gate Controls</h2>
+            </div>
+            <span class="live-badge">Live</span>
+        </div>
+
+        <h3 class="subheading">Single-Qubit Operations</h3>
+
+        <div class="twoq-gate-grid">
+            <button class="gate-btn" onclick="twoQGate('H1')">
+                <strong>H₁</strong><small>Hadamard</small>
+            </button>
+            <button class="gate-btn" onclick="twoQGate('X1')">
+                <strong>X₁</strong><small>Pauli-X</small>
+            </button>
+            <button class="gate-btn" onclick="twoQGate('Z1')">
+                <strong>Z₁</strong><small>Pauli-Z</small>
+            </button>
+            <button class="gate-btn" onclick="twoQGate('H2')">
+                <strong>H₂</strong><small>Hadamard</small>
+            </button>
+            <button class="gate-btn" onclick="twoQGate('X2')">
+                <strong>X₂</strong><small>Pauli-X</small>
+            </button>
+            <button class="gate-btn" onclick="twoQGate('Z2')">
+                <strong>Z₂</strong><small>Pauli-Z</small>
+            </button>
+        </div>
+
+        <h3 class="subheading">Two-Qubit Operations</h3>
+
+        <div class="twoq-gate-grid">
+            <button class="gate-btn twoq-special" onclick="twoQGate('CNOT')">
+                <strong>CNOT</strong><small>Q₁ → Q₂</small>
+            </button>
+            <button class="gate-btn twoq-special" onclick="twoQGate('CZ')">
+                <strong>CZ</strong><small>Phase flip</small>
+            </button>
+            <button class="gate-btn twoq-special" onclick="twoQGate('SWAP')">
+                <strong>SWAP</strong><small>Exchange</small>
+            </button>
+        </div>
+
+        <div class="apply-gate-row">
+            <label class="input-label" for="selectedTwoQGate">Select gate to apply</label>
+            <select id="selectedTwoQGate" class="number-input">
+                <option value="H1">H₁ — Hadamard on qubit 1</option>
+                <option value="X1">X₁ — Pauli-X on qubit 1</option>
+                <option value="Z1">Z₁ — Pauli-Z on qubit 1</option>
+                <option value="H2">H₂ — Hadamard on qubit 2</option>
+                <option value="X2">X₂ — Pauli-X on qubit 2</option>
+                <option value="Z2">Z₂ — Pauli-Z on qubit 2</option>
+                <option value="CNOT">CNOT — Controlled-NOT</option>
+                <option value="CZ">CZ — Controlled-Z</option>
+                <option value="SWAP">SWAP — State Exchange</option>
+            </select>
+            <button class="primary-btn full-btn" onclick="applySelectedTwoQGate()">Apply Gate</button>
+        </div>
+
+        <button class="reset-btn" onclick="resetTwoQubitState()">
+            &#8635; Reset to |00⟩
+        </button>
+
+    </section>
+
+</div>
+
+<!-- =============================================
+     SECTION 3: STATE DISPLAY & MEASUREMENT PROBABILITIES
+============================================== -->
+<section class="panel panel-full-width">
+
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">03</span>
+            <h2>State Display & Measurement Probabilities</h2>
+        </div>
+        <span class="live-badge">Live</span>
+    </div>
+
+    <div class="twoq-state-prob-container">
+
+        <div class="twoq-state-details">
+            <div class="twoq-state-display">
+                <span>Current State</span>
+                <strong id="twoQState">|00⟩</strong>
+            </div>
+
+            <div class="twoq-formula">
+                <span>|ψ⟩ =</span>
+                <strong id="twoQEquation">|00⟩</strong>
+            </div>
+
+            <h3 class="subheading">State Vector</h3>
+            <div class="state-vector-box" id="twoQVector">
+                <div>[ 1 ]</div>
+                <div>[ 0 ]</div>
+                <div>[ 0 ]</div>
+                <div>[ 0 ]</div>
+            </div>
+
+            <div class="twoq-status" id="twoQStatus">
+                Initial state: |00⟩
+            </div>
+        </div>
+
+        <div class="twoq-measurements-panel">
+            <h3 class="subheading">Computational Basis Probabilities</h3>
+            <div class="twoq-prob-grid">
+                <div class="twoq-prob-card">
+                    <div class="twoq-prob-top">
+                        <span>|00⟩</span><strong id="twoQProb00">100.0%</strong>
+                    </div>
+                    <div class="progress"><div class="progress-fill" id="twoQBar00" style="width:100%"></div></div>
+                </div>
+
+                <div class="twoq-prob-card">
+                    <div class="twoq-prob-top">
+                        <span>|01⟩</span><strong id="twoQProb01">0.0%</strong>
+                    </div>
+                    <div class="progress"><div class="progress-fill" id="twoQBar01" style="width:0%"></div></div>
+                </div>
+
+                <div class="twoq-prob-card">
+                    <div class="twoq-prob-top">
+                        <span>|10⟩</span><strong id="twoQProb10">0.0%</strong>
+                    </div>
+                    <div class="progress"><div class="progress-fill" id="twoQBar10" style="width:0%"></div></div>
+                </div>
+
+                <div class="twoq-prob-card">
+                    <div class="twoq-prob-top">
+                        <span>|11⟩</span><strong id="twoQProb11">0.0%</strong>
+                    </div>
+                    <div class="progress"><div class="progress-fill" id="twoQBar11" style="width:0%"></div></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- =============================================
+     BOTTOM SECTION: ENTANGLEMENT & BELL STATES
+============================================== -->
+<div class="twoq-bottom-entanglement-grid">
+
+    <!-- =============================================
+         SECTION 4: ENTANGLEMENT ANALYSIS
+    ============================================== -->
+    <section class="panel">
+
+        <div class="panel-title">
+            <div>
+                <span class="panel-number">04</span>
+                <h2>Entanglement Analysis</h2>
+            </div>
+            <span id="twoQEntClassBadge" class="operator-badge neutral">Awaiting analysis</span>
+        </div>
+
+        <div class="ent-analysis-grid">
+
+            <div>
+                <div class="entanglement-meter">
+                    <span>Concurrence</span>
+                    <strong id="twoQEntConcurrence">&mdash;</strong>
+                </div>
+
+                <div class="entanglement-bar">
+                    <div id="twoQEntConcurrenceBar"></div>
+                </div>
+
+                <div class="entanglement-result" id="twoQEntClassification">
+                    Set a state and apply gates, then run the analysis.
+                </div>
+
+                <p class="twoq-hint">
+                    Concurrence C = 2|αδ &minus; βγ| measures the
+                    entanglement of a pure two-qubit state.
+                    C = 0 means the state is separable; C = 1 means it is maximally entangled.
+                </p>
+            </div>
+
+            <div>
+                <div class="twoq-formula ent-ket-box">
+                    <span>Normalized |ψ⟩ =</span>
+                    <strong id="twoQEntKetDisplay">&mdash;</strong>
+                </div>
+
+                <div class="amplitude-list ent-amp-list">
+                    <div>
+                        <span>|00⟩</span>
+                        <strong id="twoQEntAmp00">&mdash;</strong>
+                    </div>
+                    <div>
+                        <span>|01⟩</span>
+                        <strong id="twoQEntAmp01">&mdash;</strong>
+                    </div>
+                    <div>
+                        <span>|10⟩</span>
+                        <strong id="twoQEntAmp10">&mdash;</strong>
+                    </div>
+                    <div>
+                        <span>|11⟩</span>
+                        <strong id="twoQEntAmp11">&mdash;</strong>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <button class="primary-btn full-btn" onclick="runTwoQEntanglementAnalysis()">
+            Analyze Entanglement
+        </button>
+
+        <div id="twoQEntStateMessage" class="initial-state-message">
+            Set a state and apply gates, then run the analysis.
+        </div>
+
+    </section>
+
+    <!-- =============================================
+         SECTION 5: THE FOUR BELL STATES
+    ============================================== -->
+    <section class="panel">
+
+        <div class="panel-title">
+            <div>
+                <span class="panel-number">05</span>
+                <h2>The Four Bell States</h2>
+            </div>
+            <span class="panel-subtitle">Reference table</span>
+        </div>
+
+        <p class="ent-bell-intro">
+            The Bell states are the four maximally entangled two-qubit states (C = 1).
+            Together they form an orthonormal basis of the two-qubit state space.
+            Select one to load and analyze it.
+        </p>
+
+        <div class="bell-grid">
+
+            <div class="bell-card">
+                <div class="bell-symbol">&Phi;<sup>+</sup></div>
+                <div class="bell-eq">(|00⟩ + |11⟩) / &radic;2</div>
+                <p>Even superposition of the two matching basis pairs.</p>
+                <button class="small-btn" onclick="analyzeTwoQBellState('phi_plus')">Analyze this state</button>
+            </div>
+
+            <div class="bell-card">
+                <div class="bell-symbol">&Phi;<sup>&minus;</sup></div>
+                <div class="bell-eq">(|00⟩ &minus; |11⟩) / &radic;2</div>
+                <p>Matching pairs carrying a relative minus sign.</p>
+                <button class="small-btn" onclick="analyzeTwoQBellState('phi_minus')">Analyze this state</button>
+            </div>
+
+            <div class="bell-card">
+                <div class="bell-symbol">&Psi;<sup>+</sup></div>
+                <div class="bell-eq">(|01⟩ + |10⟩) / &radic;2</div>
+                <p>Even superposition of the two opposite pairs.</p>
+                <button class="small-btn" onclick="analyzeTwoQBellState('psi_plus')">Analyze this state</button>
+            </div>
+
+            <div class="bell-card">
+                <div class="bell-symbol">&Psi;<sup>&minus;</sup></div>
+                <div class="bell-eq">(|01⟩ &minus; |10⟩) / &radic;2</div>
+                <p>The singlet state — antisymmetric under qubit exchange.</p>
+                <button class="small-btn" onclick="analyzeTwoQBellState('psi_minus')">Analyze this state</button>
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}

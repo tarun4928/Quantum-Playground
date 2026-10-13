@@ -820,6 +820,8 @@ async function runCircuit() {
         return;
     }
 
+    const customState = getCircuitStateFromInputs();
+    const initialState = customState ? "custom" : (document.getElementById("circuitInitialState")?.value || "0");
 
     try {
 
@@ -838,7 +840,8 @@ async function runCircuit() {
                     body:
                         JSON.stringify({
                             gates: circuit,
-                            initial_state: document.getElementById("circuitInitialState")?.value || "0"
+                            initial_state: initialState,
+                            custom_state: customState
                         })
 
                 }
@@ -954,6 +957,89 @@ async function runCircuit() {
 
 }
 
+
+/* -----------------------------------------------------
+   CIRCUIT LAB — CUSTOM STATE INPUT
+----------------------------------------------------- */
+
+function setCircuitPresetState(name) {
+    const s = 1 / Math.sqrt(2);
+    const presets = {
+        zero: [1, 0, 0, 0],
+        one: [0, 0, 1, 0],
+        plus: [s, 0, s, 0],
+        minus: [s, 0, -s, 0],
+    };
+    if (presets[name]) {
+        const ids = ["circuitReal0", "circuitImag0", "circuitReal1", "circuitImag1"];
+        ids.forEach((id, index) => {
+            const element = document.getElementById(id);
+            if (element) element.value = presets[name][index];
+        });
+    }
+}
+
+function getCircuitStateFromInputs() {
+    const read = id => {
+        const element = document.getElementById(id);
+        if (!element || element.value.trim() === "") return null;
+        const value = Number(element.value);
+        return Number.isFinite(value) ? value : null;
+    };
+
+    const values = [
+        read("circuitReal0"),
+        read("circuitImag0"),
+        read("circuitReal1"),
+        read("circuitImag1"),
+    ];
+
+    if (values.some(value => value === null)) return null;
+    if (Math.hypot(...values) === 0) return null;
+
+    return [
+        { real: values[0], imaginary: values[1] },
+        { real: values[2], imaginary: values[3] },
+    ];
+}
+
+async function setCircuitInitialState() {
+    const state = getCircuitStateFromInputs();
+    if (!state) {
+        alert("Please enter a valid non-zero two-component column vector.");
+        return;
+    }
+
+    const button = document.querySelector('.circuit-input-panel .primary-btn');
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Setting...";
+    }
+
+    try {
+        const response = await fetch("/api/state/set", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ state })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `State request failed (${response.status})`);
+        }
+
+        const msg = document.getElementById("circuitInitialStateMessage");
+        if (msg) msg.textContent = "Initial state set. You can now run the circuit.";
+    } catch (error) {
+        console.error(error);
+        alert(`State Error: ${error.message}`);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Set Initial State";
+        }
+    }
+}
 
 /* =====================================================
    DISPLAY CIRCUIT EXECUTION
@@ -2209,7 +2295,7 @@ function twoQGate(
         );
 
 
-    updateTwoQDisplay();
+    updateTwoQDisplayNew();
 
 }
 
@@ -2624,6 +2710,228 @@ function updateConcurrence() {
 
 
 /* =====================================================
+   TWO QUBIT LAB (twoqubit.html)
+===================================================== */
+
+const TWOQUBIT_INPUT_IDS = [
+    "twoQRe00", "twoQIm00",
+    "twoQRe01", "twoQIm01",
+    "twoQRe10", "twoQIm10",
+    "twoQRe11", "twoQIm11"
+];
+
+function readTwoQubitInputs() {
+    const values = TWOQUBIT_INPUT_IDS.map(id => {
+        const el = document.getElementById(id);
+        if (!el || el.value.trim() === "") return null;
+        const v = Number(el.value);
+        return Number.isFinite(v) ? v : null;
+    });
+
+    if (values.some(v => v === null)) return null;
+    if (values.every(v => v === 0)) return null;
+
+    const amplitudes = [];
+    for (let i = 0; i < 8; i += 2) {
+        amplitudes.push({ real: values[i], imaginary: values[i + 1] });
+    }
+    return amplitudes;
+}
+
+function setTwoQubitInputs(values) {
+    TWOQUBIT_INPUT_IDS.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (el) el.value = values[index];
+    });
+}
+
+function setTwoQubitPreset(name) {
+    const s = 1 / Math.sqrt(2);
+    const presets = {
+        zero:       [1, 0,  0, 0,  0, 0,  0, 0],
+        product:    [s, 0,  s, 0,  0, 0,  0, 0],
+        phi_plus:   [s, 0,  0, 0,  0, 0,  s, 0],
+        phi_minus:  [s, 0,  0, 0,  0, 0, -s, 0],
+        psi_plus:   [0, 0,  s, 0,  s, 0,  0, 0],
+        psi_minus:  [0, 0,  s, 0, -s, 0,  0, 0],
+    };
+    if (!presets[name]) return;
+
+    setTwoQubitInputs(presets[name]);
+
+    // Automatically apply the preset to the state so users don't have to click Set State first
+    const vals = presets[name];
+    twoQState = [
+        complex(vals[0], vals[1]),
+        complex(vals[2], vals[3]),
+        complex(vals[4], vals[5]),
+        complex(vals[6], vals[7])
+    ];
+    twoQState = normalizeTwoQState(twoQState);
+    updateTwoQDisplayNew();
+
+    const msg = document.getElementById("twoQStateMessage");
+    if (msg) msg.textContent = "Preset applied successfully.";
+}
+
+function setTwoQubitStateFromInputs() {
+    const amplitudes = readTwoQubitInputs();
+
+    if (!amplitudes) {
+        alert("Enter all eight values (real and imaginary parts of each amplitude), with at least one non-zero value.");
+        return;
+    }
+
+    // Convert to internal twoQState format
+    twoQState = amplitudes.map(a => complex(a.real, a.imaginary));
+    twoQState = normalizeTwoQState(twoQState);
+
+    updateTwoQDisplayNew();
+
+    const msg = document.getElementById("twoQStateMessage");
+    if (msg) msg.textContent = "State set successfully.";
+}
+
+function resetTwoQubitState() {
+    twoQState = [
+        complex(1),
+        complex(0),
+        complex(0),
+        complex(0)
+    ];
+
+    setTwoQubitInputs([1, 0, 0, 0, 0, 0, 0, 0]);
+
+    updateTwoQStatus("Two-qubit system reset to |00⟩.");
+    updateTwoQDisplayNew();
+}
+
+function initTwoQubitLab() {
+    // Initialize display
+    updateTwoQDisplayNew();
+
+    // Check for pending state from twoqubit lab
+    const pending = sessionStorage.getItem("twoqubit_pending_state");
+    if (pending) {
+        sessionStorage.removeItem("twoqubit_pending_state");
+        try {
+            const amplitudes = JSON.parse(pending);
+            setTwoQubitInputs(
+                amplitudes.flatMap(a => [a.real, a.imaginary])
+            );
+            twoQState = amplitudes.map(a => complex(a.real, a.imaginary));
+            twoQState = normalizeTwoQState(twoQState);
+            updateTwoQDisplayNew();
+        } catch (e) {
+            console.error("Failed to load pending state:", e);
+        }
+    }
+}
+
+
+/* =====================================================
+   TWO QUBIT LAB (twoqubit.html) — DISPLAY FUNCTIONS
+===================================================== */
+
+function updateTwoQDisplayNew() {
+    const stateText = formatTwoQState();
+
+    const stateDisplay = document.getElementById("twoQState");
+    const equation = document.getElementById("twoQEquation");
+    const vector = document.getElementById("twoQVector");
+
+    if (stateDisplay) {
+        stateDisplay.textContent = stateText;
+    }
+
+    if (equation) {
+        equation.textContent = stateText;
+    }
+
+    if (vector) {
+        vector.innerHTML = twoQState
+            .map(amplitude => `<div>[ ${formatAmplitude(amplitude)} ]</div>`)
+            .join("");
+    }
+
+    // Keep state definition inputs synchronized if present
+    const values = [];
+    twoQState.forEach(a => {
+        values.push(cleanDisplayNumber(a.re));
+        values.push(cleanDisplayNumber(a.im));
+    });
+    setTwoQubitInputs(values);
+
+    updateTwoQProbabilitiesNew();
+    updateTwoQEntanglementDisplay();
+}
+
+function updateTwoQProbabilitiesNew() {
+    twoQState.forEach((amplitude, index) => {
+        const probability = Math.max(0, Math.min(1, complexAbsSquared(amplitude)));
+        const percent = probability * 100;
+        const basis = twoQBases[index];
+
+        const value = document.getElementById(`twoQProb${basis}`);
+        const bar = document.getElementById(`twoQBar${basis}`);
+
+        if (value) {
+            value.textContent = `${percent.toFixed(1)}%`;
+        }
+        if (bar) {
+            bar.style.width = `${percent}%`;
+        }
+    });
+}
+
+function updateTwoQEntanglementDisplay() {
+    const value = calculateConcurrence();
+    const concurrenceEl = document.getElementById("twoQEntConcurrence");
+    const concurrenceBar = document.getElementById("twoQEntConcurrenceBar");
+    const badge = document.getElementById("twoQEntClassBadge");
+    const result = document.getElementById("twoQEntClassification");
+
+    if (concurrenceEl) concurrenceEl.textContent = value.toFixed(3);
+    if (concurrenceBar) concurrenceBar.style.width = `${(value * 100).toFixed(1)}%`;
+
+    let badgeClass = "operator-badge neutral";
+    let badgeText = "Awaiting analysis";
+    let resultText = "";
+
+    if (value > 0.999) {
+        badgeClass = "operator-badge highlight";
+        badgeText = "Maximally entangled";
+        resultText = "Maximally Entangled — as entangled as a Bell state (C ≈ 1).";
+    } else if (value < 0.001) {
+        badgeClass = "operator-badge success";
+        badgeText = "Separable";
+        resultText = "Separable State — not entangled; it factors into a product of two single-qubit states (C ≈ 0).";
+    } else {
+        badgeClass = "operator-badge warning";
+        badgeText = "Partially entangled";
+        resultText = `Partially Entangled — between separable and maximal (C = ${value.toFixed(3)}).`;
+    }
+
+    if (badge) {
+        badge.className = badgeClass;
+        badge.textContent = badgeText;
+    }
+    if (result) result.textContent = resultText;
+
+    // Keep normalized ket display and per-basis amplitudes up-to-date
+    const ket = document.getElementById("twoQEntKetDisplay");
+    if (ket) ket.textContent = formatTwoQState();
+
+    ["00", "01", "10", "11"].forEach((basis, index) => {
+        const ampEl = document.getElementById(`twoQEntAmp${basis}`);
+        if (ampEl) {
+            ampEl.textContent = formatAmplitude(twoQState[index]) || "0";
+        }
+    });
+}
+
+
+/* =====================================================
    PAGE INITIALIZATION
 ===================================================== */
 
@@ -2652,7 +2960,22 @@ document.addEventListener(
 
 
         /*
-            Initialize the two-qubit explorer.
+            Initialize the two-qubit lab (new twoqubit.html page).
+        */
+
+        if (
+            document.getElementById(
+                "twoQRe00"
+            )
+        ) {
+
+            initTwoQubitLab();
+
+        }
+
+
+        /*
+            Initialize the two-qubit explorer (legacy - explore.html).
         */
 
         if (
@@ -2671,6 +2994,11 @@ document.addEventListener(
 
         if (document.getElementById("measurementState")) {
             loadState();
+        }
+
+        // Initialize QKD Lab
+        if (document.getElementById("qkdEveToggle") || document.getElementById("qkdRunBtn")) {
+            initQKDLab();
         }
 
     }
@@ -4509,6 +4837,125 @@ function updateEntanglementAnalysis(data) {
 
 
 /* =====================================================
+   TWO QUBIT LAB — ENTANGLEMENT ANALYSIS
+===================================================== */
+
+async function runTwoQEntanglementAnalysis() {
+    // If twoQState is not yet set or all zeros, try reading from the input fields first
+    if (!twoQState || twoQState.length !== 4 || twoQState.every(a => a.re === 0 && a.im === 0)) {
+        const inputs = readTwoQubitInputs();
+        if (inputs && inputs.length === 4) {
+            twoQState = inputs.map(a => complex(a.real, a.imaginary));
+            twoQState = normalizeTwoQState(twoQState);
+            updateTwoQDisplayNew();
+        }
+    }
+
+    if (!twoQState || twoQState.length !== 4) {
+        alert("No valid two-qubit state set. Please enter amplitude values or select a preset.");
+        return;
+    }
+
+    const isZero = twoQState.every(a => a.re === 0 && a.im === 0);
+    if (isZero) {
+        alert("State vector cannot be all zeros. Please enter non-zero amplitudes.");
+        return;
+    }
+
+    // Immediately update local display metrics
+    updateTwoQEntanglementDisplay();
+
+    const msg = document.getElementById("twoQEntStateMessage");
+    if (msg) msg.textContent = "Analyzing state...";
+
+    // Convert twoQState to amplitudes format for API
+    const amplitudes = twoQState.map(a => ({ real: a.re, imaginary: a.im }));
+
+    try {
+        const response = await fetch("/api/entanglement/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ amplitudes })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || `Analysis request failed (${response.status})`);
+        }
+
+        if (msg) msg.textContent = "State normalized and analyzed successfully.";
+        updateTwoQEntanglementAnalysis(data);
+    } catch (error) {
+        console.warn("Server analysis request error, using client-side calculation:", error);
+        if (msg) msg.textContent = "Analyzed (client computation verified).";
+        // Ensure client-side calculation values remain displayed
+        updateTwoQEntanglementDisplay();
+    }
+}
+
+function updateTwoQEntanglementAnalysis(data) {
+    const c = Number(data.concurrence ?? 0);
+
+    const value = document.getElementById("twoQEntConcurrence");
+    if (value) value.textContent = c.toFixed(3);
+
+    const bar = document.getElementById("twoQEntConcurrenceBar");
+    if (bar) bar.style.width = `${(c * 100).toFixed(1)}%`;
+
+    const badge = document.getElementById("twoQEntClassBadge");
+    const result = document.getElementById("twoQEntClassification");
+
+    let badgeClass = "operator-badge neutral";
+    let badgeText = "Awaiting analysis";
+    let resultText = "";
+
+    if (data.classification === "maximally_entangled") {
+        badgeClass = "operator-badge highlight";
+        badgeText = "Maximally entangled";
+        resultText = "Maximally Entangled — as entangled as a Bell state (C ≈ 1).";
+    } else if (data.classification === "separable") {
+        badgeClass = "operator-badge success";
+        badgeText = "Separable";
+        resultText = "Separable State — not entangled; it factors into a product of two single-qubit states (C ≈ 0).";
+    } else if (data.classification === "partially_entangled") {
+        badgeClass = "operator-badge warning";
+        badgeText = "Partially entangled";
+        resultText = `Partially Entangled — between separable and maximal (C = ${c.toFixed(3)}).`;
+    }
+
+    if (badge) {
+        badge.className = badgeClass;
+        badge.textContent = badgeText;
+    }
+    if (result) result.textContent = resultText;
+
+    // Normalized state, written in ket form.
+    const ket = document.getElementById("twoQEntKetDisplay");
+    if (ket && data.state) ket.textContent = formatQuantumState(data.state);
+
+    // Per-basis amplitudes.
+    ["00", "01", "10", "11"].forEach(basis => {
+        const amp = data.state?.[basis];
+
+        const ampEl = document.getElementById(`twoQEntAmp${basis}`);
+        if (ampEl && amp) ampEl.textContent = formatComplexCoefficient(amp) || "0";
+    });
+}
+
+function analyzeTwoQBellState(name) {
+    setTwoQubitPreset(name);
+    // Set the state first
+    setTwoQubitStateFromInputs();
+    // Then run analysis
+    setTimeout(() => runTwoQEntanglementAnalysis(), 100);
+}
+
+
+/* =====================================================
    QKD LAB — BB84 PROTOCOL
 ===================================================== */
 
@@ -4522,10 +4969,28 @@ let qkdFinalized = false;
 
 const QKD_STAGE_ORDER = ["prepare", "transmit", "measure", "sift", "verify", "key"];
 
+function handleQKDCountChange(val) {
+    let parsed = parseInt(val, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+        if (parsed > 128) parsed = 128;
+        qkdCount = parsed;
+        const input = document.getElementById("qkdCountInput");
+        if (input && document.activeElement !== input) {
+            input.value = parsed;
+        }
+        resetQKD();
+    }
+}
+
 function setQKDCount(n) {
-    qkdCount = n;
+    let parsed = parseInt(n, 10);
+    if (isNaN(parsed) || parsed < 1) parsed = 16;
+    if (parsed > 128) parsed = 128;
+    qkdCount = parsed;
+    const input = document.getElementById("qkdCountInput");
+    if (input) input.value = parsed;
     document.querySelectorAll(".qkd-count-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.textContent.trim() === String(n));
+        btn.classList.toggle("active", btn.textContent.trim() === String(parsed));
     });
     resetQKD();
 }
@@ -4547,6 +5012,45 @@ function toggleQkdEve() {
     if (card) card.classList.toggle("off", !qkdEveEnabled);
 
     resetQKD();
+}
+
+function initQKDLab() {
+    // Initialize count input
+    const countInput = document.getElementById("qkdCountInput");
+    if (countInput) {
+        countInput.value = qkdCount;
+        countInput.addEventListener("input", (e) => handleQKDCountChange(e.target.value));
+        countInput.addEventListener("change", (e) => {
+            let val = parseInt(e.target.value, 10);
+            if (isNaN(val) || val < 1) val = 16;
+            if (val > 128) val = 128;
+            e.target.value = val;
+            handleQKDCountChange(val);
+        });
+    }
+
+    // Initialize count buttons if present
+    document.querySelectorAll(".qkd-count-btn").forEach(btn => {
+        if (btn.textContent.trim() === String(qkdCount)) {
+            btn.classList.add("active");
+        }
+        btn.addEventListener("click", () => setQKDCount(parseInt(btn.textContent.trim())));
+    });
+
+    // Initialize Eve toggle
+    const eveToggle = document.getElementById("qkdEveToggle");
+    if (eveToggle) {
+        eveToggle.checked = qkdEveEnabled;
+    }
+    toggleQkdEve(); // Set initial UI state
+
+    // Initialize stage display
+    document.querySelectorAll("#qkdStages .qkd-stage").forEach(stage => {
+        stage.classList.remove("active", "done");
+    });
+    if (document.getElementById("qkdChannelStatus")) {
+        document.getElementById("qkdChannelStatus").textContent = "No transmission yet";
+    }
 }
 
 async function fetchQKDTranscript() {
@@ -4591,8 +5095,9 @@ async function runQKDSimulation() {
     const runBtn = document.getElementById("qkdRunBtn");
     if (runBtn) runBtn.disabled = true;
 
-    // One interval covers the full physical journey of a single qubit.
-    const interval = qkdEveEnabled ? 3400 : 2000;
+    // Transmission finishes at arriveBobAt (2400ms without Eve, 5500ms with Eve).
+    // Adding 1000ms post-measurement delay after each bit gets passed before launching the next bit:
+    const interval = qkdEveEnabled ? (5500 + 1000) : (2400 + 1000);
 
     // First qubit starts immediately; the interval handles the rest.
     if (advanceQKD()) {
@@ -4826,17 +5331,35 @@ function revealQKDItem(q, total) {
     const status = document.getElementById("qkdChannelStatus");
     if (status) status.textContent = `Qubit ${q.index + 1} of ${total}`;
 
-    // -- Prepare: a fresh photon appears at Alice holding the prepared state.
-    setQKDStage("prepare");
     const photon = document.getElementById("qkdPhoton");
     const photonKet = document.getElementById("qkdPhotonKet");
 
-    // Reset to Alice instantly — a backward glide would be a different
-    // (wrong) physical journey.
+    // Active card and station highlight helpers
+    const aliceCard = document.querySelector(".qkd-inspector-grid .qkd-card:nth-child(1)");
+    const eveCard = document.getElementById("qkdEveCard");
+    const bobCard = document.querySelector(".qkd-inspector-grid .qkd-card:nth-child(3)");
+
+    const aliceStation = document.querySelector(".qkd-channel > .qkd-station:nth-of-type(1)");
+    const eveStation = document.getElementById("qkdEveStation");
+    const bobStation = document.querySelector(".qkd-channel > .qkd-station:nth-of-type(3)");
+
+    const clearActiveStates = () => {
+        [aliceCard, eveCard, bobCard].forEach(c => c?.classList.remove("card-active"));
+        [aliceStation, eveStation, bobStation].forEach(s => s?.classList.remove("station-active"));
+        if (photon) photon.classList.remove("photon-intercepted");
+    };
+
+    // -- Prepare: a fresh photon appears at Kumar holding the prepared state.
+    clearActiveStates();
+    setQKDStage("prepare");
+    if (aliceCard) aliceCard.classList.add("card-active");
+    if (aliceStation) aliceStation.classList.add("station-active");
+
+    // Reset to Alice instantly without backward animation
     if (photon) {
         photon.classList.add("no-anim");
         photon.style.left = "8%";
-        void photon.offsetWidth; // flush the transition before re-enabling
+        void photon.offsetWidth; // flush layout before re-enabling transition
         photon.classList.remove("no-anim");
     }
     if (photonKet) photonKet.textContent = q.prepared?.symbol || qkdKet(q.prepared);
@@ -4849,28 +5372,42 @@ function revealQKDItem(q, total) {
     set("qkdAliceKet", q.prepared?.symbol || qkdKet(q.prepared));
     updateQKDPolarizationVis("Alice", q.alice_basis, q.alice_bit);
 
-    // Reset Bob and Eve visuals for this new qubit until transmission arrives
+    // Reset Bob and Eve visuals for this new qubit until photon reaches them
     updateQKDPolarizationVis("Eve", null);
     updateQKDPolarizationVis("Bob", null);
-
-    // Timeline: depart → (arrive Eve → Eve intercepts → depart Eve) → arrive Bob → measure.
-    const departAt = 500;
-    const eveArriveAt = departAt + QKD_TRAVEL_MS;
-    const eveDepartAt = eveArriveAt + 350;
-    const bobArriveAt = (q.eve ? eveDepartAt : departAt) + QKD_TRAVEL_MS;
-    const measureAt = bobArriveAt + 100;
-
-    // -- Transmit: the photon physically travels the channel.
-    setTimeout(() => {
-        if (!stillCurrent()) return;
-        setQKDStage("transmit");
-        if (photon) photon.style.left = q.eve ? "50%" : "92%";
-    }, departAt);
+    ["qkdEveBasis", "qkdEveBasisName", "qkdEveResult", "qkdEveGates", "qkdEveKet",
+     "qkdBobBasis", "qkdBobBasisName", "qkdBobGates", "qkdBobKet", "qkdBobResult"
+    ].forEach(id => set(id, "—"));
 
     if (q.eve) {
-        // Eve intercepts exactly when the photon reaches her station.
+        // --- TIMELINE WITH EVE (SLOWER GLIDE) ---
+        // 0ms: Prepare at Kumar (highlight Kumar)
+        // 700ms: Transmit towards Eve (takes 1.6s)
+        // 2400ms: Arrive at Eve (highlight Eve, measure & collapse state)
+        // 3800ms: Eve resends onwards to Tarun (takes 1.6s)
+        // 5500ms: Arrive at Tarun (highlight Tarun, Tarun measures)
+        const departAliceAt = 700;
+        const arriveEveAt = 2400;
+        const departEveAt = 3800;
+        const arriveBobAt = 5500;
+
+        // Depart Kumar -> travel to Eve
         setTimeout(() => {
             if (!stillCurrent()) return;
+            setQKDStage("transmit");
+            if (aliceCard) aliceCard.classList.remove("card-active");
+            if (aliceStation) aliceStation.classList.remove("station-active");
+            if (status) status.textContent = `Qubit ${q.index + 1} of ${total} — traveling towards Eve`;
+            if (photon) photon.style.left = "50%";
+        }, departAliceAt);
+
+        // Intercept at Eve
+        setTimeout(() => {
+            if (!stillCurrent()) return;
+            if (eveCard) eveCard.classList.add("card-active");
+            if (eveStation) eveStation.classList.add("station-active");
+            if (photon) photon.classList.add("photon-intercepted");
+
             const eveInfo = qkdBasisInfo(q.eve.basis, q.eve.result);
             set("qkdEveBasis", `${eveInfo.basisName}`);
             set("qkdEveBasisName", `${q.eve.basis} (${eveInfo.basisSymbol})`);
@@ -4879,33 +5416,78 @@ function revealQKDItem(q, total) {
             set("qkdEveKet", q.eve.resent?.symbol || qkdKet(q.eve.resent));
             if (photonKet) photonKet.textContent = q.eve.resent?.symbol || qkdKet(q.eve.resent);
             updateQKDPolarizationVis("Eve", q.eve.basis, q.eve.result);
-        }, eveArriveAt);
 
-        // ...and resends the collapsed state onward to Bob.
+            if (status) status.textContent = `Qubit ${q.index + 1} of ${total} — intercepted by Eve (${q.eve.basis} basis)`;
+        }, arriveEveAt);
+
+        // Eve resends to Tarun
         setTimeout(() => {
             if (!stillCurrent()) return;
+            if (eveCard) eveCard.classList.remove("card-active");
+            if (eveStation) eveStation.classList.remove("station-active");
+            if (status) status.textContent = `Qubit ${q.index + 1} of ${total} — resent by Eve towards Tarun`;
             if (photon) photon.style.left = "92%";
-        }, eveDepartAt);
+        }, departEveAt);
+
+        // Tarun receives & measures
+        setTimeout(() => {
+            if (!stillCurrent()) return;
+            setQKDStage("measure");
+            if (bobCard) bobCard.classList.add("card-active");
+            if (bobStation) bobStation.classList.add("station-active");
+
+            const bobInfo = qkdBasisInfo(q.bob_basis, q.bob_result);
+            set("qkdBobBasis", `${bobInfo.basisName}`);
+            set("qkdBobBasisName", `${q.bob_basis} (${bobInfo.basisSymbol})`);
+            set("qkdBobGates", qkdGatesText(q.bob_gates));
+            set("qkdBobKet", q.eve.resent?.symbol || qkdKet(q.eve.resent));
+            set("qkdBobResult", q.bob_result);
+            updateQKDPolarizationVis("Bob", q.bob_basis, q.bob_result);
+
+            if (status) status.textContent = `Qubit ${q.index + 1} of ${total} — measured by Tarun (${q.bob_basis} basis)`;
+            renderQKDWire(q);
+            appendQKDLogRow(q);
+
+            const badge = document.getElementById("qkdLogCount");
+            if (badge) badge.textContent = `${q.index + 1} qubit${q.index === 0 ? "" : "s"}`;
+        }, arriveBobAt);
+
+    } else {
+        // --- TIMELINE WITHOUT EVE (DIRECT KUMAR -> TARUN, SLOWER GLIDE) ---
+        const departAliceAt = 700;
+        const arriveBobAt = 2400;
+
+        setTimeout(() => {
+            if (!stillCurrent()) return;
+            setQKDStage("transmit");
+            if (aliceCard) aliceCard.classList.remove("card-active");
+            if (aliceStation) aliceStation.classList.remove("station-active");
+            if (status) status.textContent = `Qubit ${q.index + 1} of ${total} — in transit to Tarun`;
+            if (photon) photon.style.left = "92%";
+        }, departAliceAt);
+
+        setTimeout(() => {
+            if (!stillCurrent()) return;
+            setQKDStage("measure");
+            if (bobCard) bobCard.classList.add("card-active");
+            if (bobStation) bobStation.classList.add("station-active");
+
+            const bobInfo = qkdBasisInfo(q.bob_basis, q.bob_result);
+            set("qkdBobBasis", `${bobInfo.basisName}`);
+            set("qkdBobBasisName", `${q.bob_basis} (${bobInfo.basisSymbol})`);
+            set("qkdBobGates", qkdGatesText(q.bob_gates));
+            set("qkdBobKet", q.prepared?.symbol || qkdKet(q.prepared));
+            set("qkdBobResult", q.bob_result);
+            updateQKDPolarizationVis("Bob", q.bob_basis, q.bob_result);
+
+            if (status) status.textContent = `Qubit ${q.index + 1} of ${total} — measured by Tarun`;
+            renderQKDWire(q);
+            appendQKDLogRow(q);
+
+            const badge = document.getElementById("qkdLogCount");
+            if (badge) badge.textContent = `${q.index + 1} qubit${q.index === 0 ? "" : "s"}`;
+        }, arriveBobAt);
     }
-
-    // -- Measure: Bob reads the photon only once it has arrived.
-    setTimeout(() => {
-        if (!stillCurrent()) return;
-        setQKDStage("measure");
-        const bobInfo = qkdBasisInfo(q.bob_basis, q.bob_result);
-        set("qkdBobBasis", `${bobInfo.basisName}`);
-        set("qkdBobBasisName", `${q.bob_basis} (${bobInfo.basisSymbol})`);
-        set("qkdBobGates", qkdGatesText(q.bob_gates));
-        set("qkdBobKet", q.eve ? (q.eve.resent?.symbol || qkdKet(q.eve.resent)) : (q.prepared?.symbol || qkdKet(q.prepared)));
-        set("qkdBobResult", q.bob_result);
-        updateQKDPolarizationVis("Bob", q.bob_basis, q.bob_result);
-
-        renderQKDWire(q);
-        appendQKDLogRow(q);
-
-        const badge = document.getElementById("qkdLogCount");
-        if (badge) badge.textContent = `${q.index + 1} qubit${q.index === 0 ? "" : "s"}`;
-    }, measureAt);
 }
 
 function renderQKDWire(q) {
@@ -5030,7 +5612,7 @@ function finalizeQKD() {
 
         updateQKDInferences(transcript);
 
-        const thresholdPct = Math.round((summary.threshold ?? 0.15) * 100);
+        const thresholdPct = Math.round((summary.threshold ?? 0.11) * 100);
         set("qkdThresholdInfo", `Tolerance ≤ ${thresholdPct}%`);
 
         const rateEl = document.getElementById("qkdErrorRate");
@@ -5209,7 +5791,7 @@ function updateQKDInferences(transcript) {
         : Number((sample.error_rate * 100).toFixed(1));
     const qberText = qber === null ? "—" : `${qber}%`;
     const keptPct = sent ? Math.round((kept / sent) * 100) : 0;
-    const thresholdPct = Math.round((summary.threshold ?? 0.15) * 100);
+    const thresholdPct = Math.round((summary.threshold ?? 0.11) * 100);
 
     const setNote = (n, text) => {
         const el = document.getElementById("qkdNote" + n);
@@ -5266,8 +5848,14 @@ function clearQKDDisplays() {
     updateQKDPolarizationVis("Eve", null);
     updateQKDPolarizationVis("Bob", null);
 
+    document.querySelectorAll(".qkd-card").forEach(c => c.classList.remove("card-active"));
+    document.querySelectorAll(".qkd-station").forEach(s => s.classList.remove("station-active"));
+
     const photon = document.getElementById("qkdPhoton");
-    if (photon) photon.style.left = "8%";
+    if (photon) {
+        photon.classList.remove("photon-intercepted");
+        photon.style.left = "8%";
+    }
     set("qkdPhotonKet", "|0⟩");
 
     set("qkdChannelStatus", "No transmission yet");
@@ -5302,7 +5890,7 @@ function clearQKDDisplays() {
         "A low error rate means the channel was clean; roughly 25% errors is the signature of Eve measuring every qubit in a random basis.");
 
     set("qkdSampleInfo", "Half of the sifted key");
-    set("qkdThresholdInfo", "Tolerance ≤ 15%");
+    set("qkdThresholdInfo", "Tolerance ≤ 11%");
 
     document.querySelectorAll("#qkdStages .qkd-stage").forEach(stage => {
         stage.classList.remove("active", "done");

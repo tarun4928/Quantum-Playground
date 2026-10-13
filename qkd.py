@@ -8,10 +8,12 @@ from states import normalize_state, zero_state
 
 BASES = ("Z", "X")
 ALLOWED_COUNTS = (4, 8, 16, 32)
+MIN_COUNT = 1
+MAX_COUNT = 128
 
 # Sifted-key error tolerance: BB84 aborts when the observed error rate
 # is clearly above the ideal value of zero.
-ERROR_THRESHOLD = 0.15
+ERROR_THRESHOLD = 0.11
 
 
 def _prepare_state(bit, basis):
@@ -92,8 +94,8 @@ def run_bb84(count=16, eve_enabled=False):
     the sifted key on average.
     """
     count = int(count)
-    if count not in ALLOWED_COUNTS:
-        raise ValueError("Qubit count must be one of 4, 8, 16 or 32.")
+    if count < MIN_COUNT or count > MAX_COUNT:
+        raise ValueError(f"Qubit count must be between {MIN_COUNT} and {MAX_COUNT}.")
 
     qubits = []
 

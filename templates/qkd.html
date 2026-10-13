@@ -36,12 +36,18 @@
     <div class="qkd-setup-row">
 
         <div class="qkd-setup-group">
-            <span class="qkd-setup-label">Qubits</span>
-            <div class="explorer-switch qkd-count-switch">
-                <button class="explorer-tab qkd-count-btn" onclick="setQKDCount(4)">4</button>
-                <button class="explorer-tab qkd-count-btn" onclick="setQKDCount(8)">8</button>
-                <button class="explorer-tab qkd-count-btn active" onclick="setQKDCount(16)">16</button>
-                <button class="explorer-tab qkd-count-btn" onclick="setQKDCount(32)">32</button>
+            <label class="qkd-setup-label" for="qkdCountInput">Qubits</label>
+            <div class="qkd-input-wrapper">
+                <input type="number"
+                       id="qkdCountInput"
+                       class="operator-input qkd-count-input"
+                       min="1"
+                       max="128"
+                       step="1"
+                       value="16"
+                       placeholder="16"
+                       onchange="handleQKDCountChange(this.value)"
+                       oninput="handleQKDCountChange(this.value)">
             </div>
         </div>
 
@@ -395,7 +401,7 @@
         <div class="metric-card">
             <span class="metric-label">Error rate (QBER)</span>
             <strong class="metric-value" id="qkdErrorRate">&mdash;</strong>
-            <small class="metric-sub" id="qkdThresholdInfo">Tolerance &le; 15%</small>
+            <small class="metric-sub" id="qkdThresholdInfo">Tolerance &le; 11%</small>
         </div>
 
         <div class="metric-card">

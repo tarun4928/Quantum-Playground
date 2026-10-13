@@ -2,6 +2,19 @@
 
 {% block title %}Circuit Lab | Quantum Playground{% endblock %}
 
+{% block head %}
+<!-- MathJax for quantum-state notation -->
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)']],
+            displayMath: [['\\[', '\\]']]
+        }
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
+
 {% block content %}
 
 <div class="page-heading">
@@ -22,15 +35,77 @@
 </div>
 
 <section class="panel circuit-input-panel">
-    <div class="panel-title"><div><span class="panel-number">00</span><h2>Initial Qubit Input</h2></div></div>
-    <p>Choose the starting single-qubit state for this circuit. This input is independent of the Qubit Lab state.</p>
-    <label class="input-label" for="circuitInitialState">Starting state</label>
-    <select id="circuitInitialState" class="number-input">
-        <option value="0">|0⟩</option>
-        <option value="1">|1⟩</option>
-        <option value="+">|+⟩ = (|0⟩ + |1⟩)/√2</option>
-        <option value="-">|−⟩ = (|0⟩ − |1⟩)/√2</option>
-    </select>
+    <div class="panel-title">
+        <div>
+            <span class="panel-number">
+                01
+            </span>
+            <h2>
+                Initial Qubit Input
+            </h2>
+        </div>
+    </div>
+    <p>
+        Define the starting single-qubit state for this circuit. This input is independent of the Qubit Lab state.
+    </p>
+
+    <div class="state-definition-panel">
+
+        <div class="operator-label-row">
+            <span>Define Initial Qubit State</span>
+            <small>2 × 1 complex column vector</small>
+        </div>
+
+        <div class="initial-state-equation">
+            \[
+            |\psi\rangle =
+            \begin{bmatrix}
+            \alpha\\
+            \beta
+            \end{bmatrix}
+            \]
+        </div>
+
+        <div class="initial-state-grid">
+            <div>
+                <label class="operator-input-label" for="circuitReal0">Re(&alpha;)</label>
+                <input id="circuitReal0" class="operator-input" type="number" step="any" placeholder="0">
+            </div>
+            <div>
+                <label class="operator-input-label" for="circuitImag0">Im(&alpha;)</label>
+                <input id="circuitImag0" class="operator-input" type="number" step="any" placeholder="0">
+            </div>
+            <div>
+                <label class="operator-input-label" for="circuitReal1">Re(&beta;)</label>
+                <input id="circuitReal1" class="operator-input" type="number" step="any" placeholder="0">
+            </div>
+            <div>
+                <label class="operator-input-label" for="circuitImag1">Im(&beta;)</label>
+                <input id="circuitImag1" class="operator-input" type="number" step="any" placeholder="0">
+            </div>
+        </div>
+
+        <div class="preset-row">
+            <span>Quick states:</span>
+            <button type="button" class="preset-btn" onclick="setCircuitPresetState('zero')">|0⟩</button>
+            <button type="button" class="preset-btn" onclick="setCircuitPresetState('one')">|1⟩</button>
+            <button type="button" class="preset-btn" onclick="setCircuitPresetState('plus')">|+⟩</button>
+            <button type="button" class="preset-btn" onclick="setCircuitPresetState('minus')">|&minus;⟩</button>
+        </div>
+
+        <p class="operator-help">
+            Enter any non-zero two-component state. The simulator normalizes it before using it as a quantum state.
+        </p>
+
+        <button class="primary-btn full-btn" onclick="setCircuitInitialState()">
+            Set Initial State
+        </button>
+
+        <div id="circuitInitialStateMessage" class="initial-state-message">
+            Define your state before running the circuit.
+        </div>
+
+    </div>
 </section>
 
 
@@ -45,7 +120,7 @@
         <div>
 
             <span class="panel-number">
-                01
+                02
             </span>
 
             <h2>
@@ -149,7 +224,7 @@
         <div>
 
             <span class="panel-number">
-                02
+                03
             </span>
 
             <h2>
@@ -248,7 +323,7 @@
             <div>
 
                 <span class="panel-number">
-                    03
+                    04
                 </span>
 
                 <h2>
@@ -288,7 +363,7 @@
             <div>
 
                 <span class="panel-number">
-                    04
+                    05
                 </span>
 
                 <h2>
@@ -388,7 +463,7 @@
         <div>
 
             <span class="panel-number">
-                05
+                06
             </span>
 
             <h2>
